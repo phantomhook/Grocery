@@ -83,10 +83,12 @@
   .cb:active { transform: scale(0.9); }
   .cb.checked { background: #2a7a4f; border-color: #2a7a4f; }
   .cb.checked::after { content: ''; display: block; width: 5px; height: 9px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(40deg) translate(-1px, -1px); }
-  .item-qty-col { width: 72px; flex-shrink: 0; padding: 10px 0; text-align: center; align-self: stretch; display: flex; align-items: center; justify-content: center; border-right: 1px solid #f0efeb; }
-  .item-qty-text { font-size: 14px; font-weight: 700; color: #1a1a1a; line-height: 1.2; }
-  .item-qty-text.empty { color: #ddd; font-weight: 400; }
-  .item-row.done-row .item-qty-text { color: #c5c4bf; }
+  .item-qty-col { width: 80px; flex-shrink: 0; padding: 8px 6px; text-align: center; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid #f0efeb; }
+  .item-qty-num { font-size: 16px; font-weight: 800; color: #1a1a1a; line-height: 1.1; }
+  .item-qty-unit { font-size: 10px; font-weight: 600; color: #2a7a4f; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 1px; }
+  .item-qty-col.empty .item-qty-num { color: #ddd; font-weight: 400; font-size: 14px; }
+  .item-row.done-row .item-qty-num { color: #c5c4bf; }
+  .item-row.done-row .item-qty-unit { color: #c5c4bf; }
   .item-body { flex: 1; min-width: 0; padding: 10px 12px; }
   .item-name { font-size: 15px; color: #1a1a1a; line-height: 1.3; transition: color 0.15s; }
   .item-name.done { text-decoration: line-through; color: #c5c4bf; }
@@ -218,7 +220,8 @@
       </div>
     </div>
     <div class="quick-add">
-      <input type="text" id="quickQty" placeholder="Qty" style="flex:0 0 60px">
+      <input type="text" id="quickQty" placeholder="Qty" style="flex:0 0 50px">
+      <input type="text" id="quickUnit" placeholder="Unit" style="flex:0 0 60px">
       <input type="text" id="quickName" placeholder="Item name...">
       <div class="quick-add-section"><select id="quickSection"></select></div>
       <button class="quick-add-btn" onclick="quickAdd()">Add</button>
@@ -323,14 +326,31 @@ function save() {
   localStorage.setItem('grocery_history', JSON.stringify(history));
 }
 
+function migrateQtyUnit(list) {
+  if (!list || !list.sections) return;
+  const unitRe = new RegExp(`^(.+?)\\s+(${UNITS})$`, 'i');
+  list.sections.forEach(s => s.items.forEach(item => {
+    if (item.unit === undefined && item.qty) {
+      const m = item.qty.match(unitRe);
+      if (m) { item.qty = m[1]; item.unit = m[2].toLowerCase(); }
+      else { item.unit = ''; }
+    }
+    if (item.unit === undefined) item.unit = '';
+  }));
+}
+
 function load() {
   const c = localStorage.getItem('grocery_current');
   const h = localStorage.getItem('grocery_history');
   if (c) {
     currentList = JSON.parse(c);
     if (currentList && !currentList.date) { currentList.date = todayStr(); }
+    migrateQtyUnit(currentList);
   }
-  if (h) history = JSON.parse(h);
+  if (h) {
+    history = JSON.parse(h);
+    history.forEach(l => migrateQtyUnit(l));
+  }
   // migrate old single-list format
   if (!currentList && !h) {
     const oldSec = localStorage.getItem('grocery_sections');
@@ -446,8 +466,9 @@ function render() {
         <div class="item-check">
           <div class="cb ${done ? 'checked' : ''}" onclick="toggleCheck('${item.id}', this)"></div>
         </div>
-        <div class="item-qty-col">
-          <span class="item-qty-text ${item.qty ? '' : 'empty'}">${item.qty || '--'}</span>
+        <div class="item-qty-col ${(!item.qty && !item.unit) ? 'empty' : ''}">
+          <span class="item-qty-num">${item.qty || '--'}</span>
+          ${item.unit ? `<span class="item-qty-unit">${item.unit}</span>` : ''}
         </div>
         <div class="item-body">
           <div class="item-name ${done ? 'done' : ''}">${item.name}</div>
@@ -470,7 +491,8 @@ function render() {
       editRow.id = `edit-${section.id}-${idx}`;
       editRow.innerHTML = `
         <div class="edit-fields-row">
-          <input type="text" placeholder="Qty" id="eq-${section.id}-${idx}" value="${(item.qty || '').replace(/"/g, '&quot;')}">
+          <input type="text" placeholder="Qty" id="eq-${section.id}-${idx}" value="${(item.qty || '').replace(/"/g, '&quot;')}" style="flex:0 0 50px">
+          <input type="text" placeholder="Unit" id="eu-${section.id}-${idx}" value="${(item.unit || '').replace(/"/g, '&quot;')}" style="flex:0 0 60px">
           <input type="text" placeholder="Item name" id="en-${section.id}-${idx}" value="${(item.name || '').replace(/"/g, '&quot;')}" style="flex:2">
         </div>
         <input type="text" placeholder="Note (optional)" id="eno-${section.id}-${idx}" value="${(item.note || '').replace(/"/g, '&quot;')}">
@@ -487,7 +509,8 @@ function render() {
     form.id = `form-${section.id}`;
     form.innerHTML = `
       <div class="add-form-row">
-        <input type="text" placeholder="Qty (optional)" id="qty-${section.id}">
+        <input type="text" placeholder="Qty" id="qty-${section.id}" style="flex:0 0 50px">
+        <input type="text" placeholder="Unit" id="unit-${section.id}" style="flex:0 0 60px">
         <input type="text" placeholder="Item name" id="name-${section.id}" style="flex:2">
       </div>
       <input type="text" placeholder="Note (optional)" id="note-${section.id}">
@@ -533,15 +556,18 @@ function quickAdd() {
   if (!currentList) return;
   const nameInp = document.getElementById('quickName');
   const qtyInp = document.getElementById('quickQty');
+  const unitInp = document.getElementById('quickUnit');
   const name = nameInp.value.trim();
   if (!name) return;
   const qty = qtyInp.value.trim();
+  const unit = unitInp.value.trim();
   const sectionId = document.getElementById('quickSection').value;
   const section = currentList.sections.find(s => s.id === sectionId);
   if (!section) return;
-  section.items.push({ id: uid(), qty, name, note: '', recipe: '' });
+  section.items.push({ id: uid(), qty, unit, name, note: '', recipe: '' });
   nameInp.value = '';
   qtyInp.value = '';
+  unitInp.value = '';
   save();
   render();
 }
@@ -589,13 +615,14 @@ function toggleAddForm(sectionId) {
 function addItem(sectionId) {
   if (!currentList) return;
   const qty = document.getElementById(`qty-${sectionId}`).value.trim();
+  const unit = document.getElementById(`unit-${sectionId}`).value.trim();
   const name = document.getElementById(`name-${sectionId}`).value.trim();
   const note = document.getElementById(`note-${sectionId}`).value.trim();
   const recipe = document.getElementById(`recipe-${sectionId}`).value.trim();
   if (!name) return;
   const section = currentList.sections.find(s => s.id === sectionId);
   if (!section) return;
-  section.items.push({ id: uid(), qty: qty || '', name, note, recipe });
+  section.items.push({ id: uid(), qty: qty || '', unit: unit || '', name, note, recipe });
   save();
   render();
   const form = document.getElementById(`form-${sectionId}`);
@@ -618,6 +645,7 @@ function saveEditItem(sectionId, idx) {
   const name = document.getElementById(`en-${sectionId}-${idx}`).value.trim();
   if (!name) return;
   section.items[idx].qty = document.getElementById(`eq-${sectionId}-${idx}`).value.trim();
+  section.items[idx].unit = document.getElementById(`eu-${sectionId}-${idx}`).value.trim();
   section.items[idx].name = name;
   section.items[idx].note = document.getElementById(`eno-${sectionId}-${idx}`).value.trim();
   section.items[idx].recipe = document.getElementById(`er-${sectionId}-${idx}`).value.trim();
@@ -721,19 +749,23 @@ function parseLine(line) {
   );
 
   let qty = '';
+  let unit = '';
   let name = line;
 
   const qtyMatch = line.match(qtyRe);
   if (qtyMatch && qtyMatch[0].trim().length > 0) {
-    qty = qtyMatch[0].trim().replace(/\.\s*$/, '');
+    qty = (qtyMatch[1] || '').trim();
+    unit = (qtyMatch[2] || '').trim().toLowerCase();
     name = line.slice(qtyMatch[0].length).trim();
   }
 
   // If no qty found, check for trailing qty in parens: "onion (2)" or "garlic (3 cloves)"
   if (!qty) {
-    const trailingQty = name.match(/\((\d+[\s/.]?\d*\s*(?:${UNITS})?)\)\s*$/i);
+    const trailingRe = new RegExp(`\\((\\d+[\\s/.]?\\d*)\\s*(${UNITS})?\\)\\s*$`, 'i');
+    const trailingQty = name.match(trailingRe);
     if (trailingQty) {
-      qty = trailingQty[1].trim();
+      qty = (trailingQty[1] || '').trim();
+      unit = (trailingQty[2] || '').trim().toLowerCase();
       name = name.slice(0, trailingQty.index).trim();
     }
   }
@@ -758,7 +790,7 @@ function parseLine(line) {
   name = name.replace(/,\s*$/, '').trim();
   if (!name) return null;
 
-  return { id: uid(), qty, name, note, recipe: '' };
+  return { id: uid(), qty, unit, name, note, recipe: '' };
 }
 
 function parseText(text) {
@@ -962,7 +994,8 @@ document.getElementById('pasteInput').addEventListener('input', () => {
 });
 
 // ── Enter key on quick add & new list ──
-document.getElementById('quickQty').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('quickName').focus(); });
+document.getElementById('quickQty').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('quickUnit').focus(); });
+document.getElementById('quickUnit').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('quickName').focus(); });
 document.getElementById('quickName').addEventListener('keydown', e => { if (e.key === 'Enter') quickAdd(); });
 document.getElementById('newTitle').addEventListener('keydown', e => { if (e.key === 'Enter') { document.getElementById('newDate').focus(); } });
 document.getElementById('newDate').addEventListener('keydown', e => { if (e.key === 'Enter') createList(); });
