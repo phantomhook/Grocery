@@ -8,31 +8,40 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f6f3; color: #1a1a1a; font-size: 16px; -webkit-font-smoothing: antialiased; }
 
+  /* ── Tabs ── */
+  .tabs { display: flex; background: #1d5e3a; position: sticky; top: 0; z-index: 20; }
+  .tab { flex: 1; text-align: center; padding: 12px 0 10px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; color: rgba(255,255,255,0.5); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab.active { color: #fff; border-bottom-color: rgba(255,255,255,0.8); }
+  .tab:active { background: rgba(255,255,255,0.05); }
+
+  /* ── Views ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
   /* ── Hero header ── */
-  .hero { background: linear-gradient(135deg, #2a7a4f 0%, #1d5e3a 100%); color: #fff; padding: 1.5rem 1.25rem 1.25rem; position: sticky; top: 0; z-index: 10; }
-  .hero-top { display: flex; align-items: flex-start; gap: 10px; }
-  .hero-edit { background: rgba(255,255,255,0.15); border: none; color: rgba(255,255,255,0.8); font-size: 13px; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; transition: background 0.15s; }
+  .hero { background: linear-gradient(135deg, #2a7a4f 0%, #1d5e3a 100%); color: #fff; padding: 1.25rem 1.25rem 1.15rem; }
+  .hero-row { display: flex; align-items: center; gap: 10px; }
+  .hero-edit { background: rgba(255,255,255,0.15); border: none; color: rgba(255,255,255,0.8); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
   .hero-edit:active { background: rgba(255,255,255,0.25); }
   .hero-edit svg { width: 14px; height: 14px; }
-  .title-block { flex: 1; min-width: 0; }
-  .trip-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
-  .trip-date { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 3px; }
-  .progress-wrap { margin-top: 14px; }
-  .progress-bar { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; }
-  .progress-fill { height: 4px; background: rgba(255,255,255,0.85); border-radius: 2px; transition: width 0.3s ease; width: 0%; }
-  .progress-label { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 5px; }
-
-  /* ── Quick add (always visible in header) ── */
-  .quick-add { display: flex; gap: 8px; margin-top: 14px; }
+  .title-block { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .trip-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+  .title-sep { color: rgba(255,255,255,0.3); font-weight: 300; font-size: 18px; }
+  .trip-date { font-size: 14px; color: rgba(255,255,255,0.6); font-weight: 400; }
+  .quick-add { display: flex; gap: 8px; margin-top: 12px; }
   .quick-add input { flex: 1; border: none; border-radius: 10px; padding: 10px 14px; font-size: 15px; font-family: inherit; background: rgba(255,255,255,0.15); color: #fff; outline: none; }
-  .quick-add input::placeholder { color: rgba(255,255,255,0.45); }
+  .quick-add input::placeholder { color: rgba(255,255,255,0.4); }
   .quick-add input:focus { background: rgba(255,255,255,0.22); }
-  .quick-add-btn { background: rgba(255,255,255,0.9); color: #1d5e3a; border: none; border-radius: 10px; padding: 0 16px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+  .quick-add-btn { background: rgba(255,255,255,0.9); color: #1d5e3a; border: none; border-radius: 10px; padding: 0 16px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
   .quick-add-btn:active { background: #fff; }
   .quick-add-section { position: relative; }
   .quick-add-section select { appearance: none; -webkit-appearance: none; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); border: none; border-radius: 10px; padding: 10px 28px 10px 12px; font-size: 13px; font-family: inherit; cursor: pointer; outline: none; }
   .quick-add-section select option { color: #1a1a1a; background: #fff; }
   .quick-add-section::after { content: '\25BE'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.5); font-size: 12px; pointer-events: none; }
+  .progress-wrap { margin-top: 12px; }
+  .progress-bar { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; }
+  .progress-fill { height: 4px; background: rgba(255,255,255,0.85); border-radius: 2px; transition: width 0.3s ease; width: 0%; }
+  .progress-label { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px; }
 
   /* ── Meta edit panel ── */
   .meta-edit { background: #fff; border-bottom: 1px solid #e8e7e3; padding: 1rem 1.25rem; display: none; }
@@ -40,15 +49,13 @@
   .meta-row { display: flex; gap: 10px; margin-bottom: 8px; }
   .meta-row input { flex: 1; border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; transition: border-color 0.15s; }
   .meta-row input:focus { outline: none; border-color: #2a7a4f; }
-  .meta-actions { display: flex; gap: 8px; }
   .meta-save { font-size: 13px; background: #2a7a4f; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; cursor: pointer; font-weight: 500; }
-  .meta-save:active { background: #1d5e3a; }
 
   /* ── Notes ── */
   .notes-area { background: #fff; border-bottom: 1px solid #e8e7e3; padding: 0.85rem 1.25rem; display: none; }
   .notes-area.open { display: block; }
   .notes-label { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-  .notes-input { width: 100%; border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; resize: vertical; min-height: 70px; transition: border-color 0.15s; }
+  .notes-input { width: 100%; border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; resize: vertical; min-height: 70px; }
   .notes-input:focus { outline: none; border-color: #2a7a4f; }
 
   /* ── Content ── */
@@ -60,12 +67,10 @@
   .section-count { font-size: 10px; color: #bbb; font-weight: 500; }
   .section-remove { font-size: 14px; color: #ccc; background: none; border: none; cursor: pointer; padding: 0; line-height: 1; }
   .section-remove:active { color: #e55; }
-  .section-actions { display: flex; align-items: center; gap: 10px; }
   .add-item-btn { font-size: 12px; color: #2a7a4f; background: none; border: none; cursor: pointer; padding: 2px 0; font-weight: 500; }
 
   /* ── Items ── */
-  .item-row { display: flex; align-items: flex-start; gap: 12px; padding: 11px 1.25rem; background: #fff; border-bottom: 1px solid #f0efeb; transition: background 0.1s; }
-  .item-row:active { background: #fafaf8; }
+  .item-row { display: flex; align-items: flex-start; gap: 12px; padding: 11px 1.25rem; background: #fff; border-bottom: 1px solid #f0efeb; }
   .cb { width: 20px; height: 20px; border: 2px solid #d0cfc9; border-radius: 6px; flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
   .cb:active { transform: scale(0.9); }
   .cb.checked { background: #2a7a4f; border-color: #2a7a4f; }
@@ -77,31 +82,29 @@
   .item-main.done .item-qty { color: #c5c4bf; }
   .item-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
   .item-recipe { font-size: 11px; color: #7ab0e0; margin-top: 1px; font-weight: 500; }
-  .delete-btn { font-size: 18px; color: #ddd; background: none; border: none; cursor: pointer; padding: 0 0 0 4px; line-height: 1; flex-shrink: 0; transition: color 0.1s; }
+  .delete-btn { font-size: 18px; color: #ddd; background: none; border: none; cursor: pointer; padding: 0 0 0 4px; line-height: 1; flex-shrink: 0; }
   .delete-btn:active { color: #e55; }
 
   /* ── Add item form ── */
   .add-form { display: none; background: #fff; border-bottom: 1px solid #f0efeb; padding: 10px 1.25rem; gap: 6px; flex-direction: column; }
   .add-form.open { display: flex; }
-  .add-form input { border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; width: 100%; transition: border-color 0.15s; }
+  .add-form input { border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; width: 100%; }
   .add-form input:focus { outline: none; border-color: #2a7a4f; }
   .add-form-row { display: flex; gap: 6px; }
   .add-form-row input { flex: 1; }
   .add-form-actions { display: flex; gap: 6px; justify-content: flex-end; }
   .btn-cancel { font-size: 13px; background: none; border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 7px 14px; cursor: pointer; color: #777; }
   .btn-add { font-size: 13px; background: #2a7a4f; color: #fff; border: none; border-radius: 8px; padding: 7px 16px; cursor: pointer; font-weight: 500; }
-  .btn-add:active { background: #1d5e3a; }
 
   /* ── Add section ── */
   .add-section-bar { padding: 12px 1.25rem; }
   .add-section-bar.collapsed .add-section-form { display: none; }
-  .add-section-btn { font-size: 13px; color: #2a7a4f; background: none; border: 2px dashed #d5d4ce; border-radius: 10px; padding: 12px; width: 100%; cursor: pointer; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
+  .add-section-btn { font-size: 13px; color: #2a7a4f; background: none; border: 2px dashed #d5d4ce; border-radius: 10px; padding: 12px; width: 100%; cursor: pointer; font-weight: 500; }
   .add-section-btn:active { background: #f0efeb; border-color: #2a7a4f; }
   .add-section-form { display: flex; gap: 6px; }
   .add-section-form input { flex: 1; border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; }
   .add-section-form input:focus { outline: none; border-color: #2a7a4f; }
-  .add-section-form .btn-add { flex-shrink: 0; }
-  .add-section-form .btn-cancel { flex-shrink: 0; }
+  .add-section-form .btn-add, .add-section-form .btn-cancel { flex-shrink: 0; }
 
   /* ── Empty state ── */
   .empty-state { text-align: center; padding: 3rem 2rem; color: #bbb; }
@@ -109,67 +112,128 @@
   .empty-title { font-size: 16px; font-weight: 600; color: #999; margin-bottom: 4px; }
   .empty-sub { font-size: 13px; color: #bbb; }
 
+  /* ── New list creation ── */
+  .new-list-prompt { background: #fff; padding: 2rem 1.25rem; text-align: center; }
+  .new-list-prompt h2 { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+  .new-list-prompt p { font-size: 13px; color: #999; margin-bottom: 20px; }
+  .new-list-form { max-width: 400px; margin: 0 auto; }
+  .new-list-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .new-list-row input { flex: 1; border: 1.5px solid #e0dfdb; border-radius: 10px; padding: 12px 14px; font-size: 15px; font-family: inherit; color: #1a1a1a; background: #fafaf8; }
+  .new-list-row input:focus { outline: none; border-color: #2a7a4f; }
+  .new-list-go { width: 100%; background: #2a7a4f; color: #fff; border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .new-list-go:active { background: #1d5e3a; }
+
   /* ── Bottom bar ── */
-  .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e8e7e3; padding: 0.65rem 1.25rem; display: flex; gap: 8px; }
+  .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e8e7e3; padding: 0.65rem 1.25rem; display: flex; gap: 8px; z-index: 15; }
   .bar-btn { flex: 1; font-size: 13px; font-weight: 500; background: none; border: 1.5px solid #e0dfdb; border-radius: 10px; padding: 10px; cursor: pointer; color: #777; transition: all 0.15s; }
   .bar-btn:active { background: #f0efeb; }
   .bar-btn.accent { border-color: #2a7a4f; color: #2a7a4f; }
   .bar-btn.danger { border-color: #e0dfdb; color: #c44; }
-  .bar-btn.danger:active { border-color: #c44; }
+
+  /* ── History view ── */
+  .history-header { background: linear-gradient(135deg, #2a7a4f 0%, #1d5e3a 100%); color: #fff; padding: 1.25rem; }
+  .history-header h2 { font-size: 20px; font-weight: 700; }
+  .history-header p { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 3px; }
+  .history-list { padding: 0.5rem 0 5rem; }
+  .history-empty { text-align: center; padding: 3rem 2rem; color: #bbb; }
+  .history-empty-icon { font-size: 42px; margin-bottom: 10px; opacity: 0.35; }
+  .history-empty-title { font-size: 15px; font-weight: 600; color: #999; margin-bottom: 4px; }
+  .history-empty-sub { font-size: 13px; }
+  .history-card { background: #fff; margin: 0 0 1px; padding: 14px 1.25rem; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: background 0.1s; }
+  .history-card:active { background: #fafaf8; }
+  .history-card:first-child { border-top: 1px solid #f0efeb; }
+  .history-badge { width: 40px; height: 40px; border-radius: 10px; background: #eef7f1; color: #2a7a4f; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+  .history-info { flex: 1; min-width: 0; }
+  .history-title { font-size: 15px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-date { font-size: 12px; color: #aaa; margin-top: 2px; }
+  .history-stats { font-size: 11px; color: #bbb; margin-top: 1px; }
+  .history-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .history-action-btn { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid #e8e7e3; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 14px; transition: all 0.15s; }
+  .history-action-btn:active { background: #f0efeb; }
+  .history-action-btn.delete:active { color: #e55; border-color: #e55; }
+  .history-action-btn svg { width: 14px; height: 14px; }
 </style>
 </head>
 <body>
 
-<div class="hero">
-  <div class="hero-top">
-    <button class="hero-edit" onclick="toggleMeta()" title="Edit list name & date">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z"/>
-      </svg>
-    </button>
-    <div class="title-block">
-      <div class="trip-title" id="tripTitle">Grocery List</div>
-      <div class="trip-date" id="tripDate"></div>
-    </div>
-  </div>
-  <div class="quick-add">
-    <input type="text" id="quickName" placeholder="Add an item...">
-    <div class="quick-add-section">
-      <select id="quickSection"></select>
-    </div>
-    <button class="quick-add-btn" onclick="quickAdd()">Add</button>
-  </div>
-  <div class="progress-wrap">
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="progress-label" id="progressLabel">No items yet</div>
-  </div>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('current')">Current List</div>
+  <div class="tab" onclick="switchTab('history')">History</div>
 </div>
 
-<div class="meta-edit" id="metaEdit">
-  <div class="meta-row">
-    <input type="text" id="titleInput" placeholder="List name (e.g. Beach Weekend)">
-    <input type="text" id="dateInput" placeholder="Date (e.g. June 15)">
+<!-- ══════ CURRENT LIST VIEW ══════ -->
+<div class="view active" id="viewCurrent">
+
+  <div class="hero" id="heroBar" style="display:none">
+    <div class="hero-row">
+      <button class="hero-edit" onclick="toggleMeta()" title="Edit">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="trip-title" id="tripTitle"></div>
+        <span class="title-sep" id="titleSep">/</span>
+        <div class="trip-date" id="tripDate"></div>
+      </div>
+    </div>
+    <div class="quick-add">
+      <input type="text" id="quickName" placeholder="Add an item...">
+      <div class="quick-add-section"><select id="quickSection"></select></div>
+      <button class="quick-add-btn" onclick="quickAdd()">Add</button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">No items yet</div>
+    </div>
   </div>
-  <div class="meta-actions">
+
+  <div class="meta-edit" id="metaEdit">
+    <div class="meta-row">
+      <input type="text" id="titleInput" placeholder="List name">
+      <input type="text" id="dateInput" placeholder="Date">
+    </div>
     <button class="meta-save" onclick="saveMeta()">Save</button>
   </div>
+
+  <div class="notes-area" id="notesArea">
+    <div class="notes-label">Notes</div>
+    <textarea class="notes-input" id="notesInput" placeholder="Meal ideas, store preferences, dietary notes..."></textarea>
+  </div>
+
+  <!-- New list prompt (shown when no active list) -->
+  <div id="newListPrompt" style="display:none">
+    <div class="new-list-prompt">
+      <h2>Start a new list</h2>
+      <p>Name your trip, set the date, and start adding items.</p>
+      <div class="new-list-form">
+        <div class="new-list-row">
+          <input type="text" id="newTitle" placeholder="e.g. Johnsville Trip">
+          <input type="text" id="newDate" placeholder="e.g. June 15">
+        </div>
+        <button class="new-list-go" onclick="createList()">Create list</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content" id="content"></div>
+
+  <div class="bottom-bar" id="bottomBar" style="display:none">
+    <button class="bar-btn" onclick="resetAll()">Uncheck</button>
+    <button class="bar-btn accent" onclick="toggleNotes()">Notes</button>
+    <button class="bar-btn danger" onclick="archiveAndNew()">New list</button>
+  </div>
 </div>
 
-<div class="notes-area" id="notesArea">
-  <div class="notes-label">Notes</div>
-  <textarea class="notes-input" id="notesInput" placeholder="Meal ideas, store preferences, dietary notes..."></textarea>
-</div>
-
-<div class="content" id="content"></div>
-
-<div class="bottom-bar">
-  <button class="bar-btn" onclick="resetAll()">Uncheck all</button>
-  <button class="bar-btn accent" onclick="toggleNotes()">Notes</button>
-  <button class="bar-btn danger" onclick="newList()">New list</button>
+<!-- ══════ HISTORY VIEW ══════ -->
+<div class="view" id="viewHistory">
+  <div class="history-header">
+    <h2>Past Lists</h2>
+    <p id="historyCount"></p>
+  </div>
+  <div class="history-list" id="historyList"></div>
 </div>
 
 <script>
-const defaultSections = [
+const DEFAULT_SECTIONS = [
   { id: 'produce', label: 'Produce', items: [] },
   { id: 'dairy', label: 'Dairy & Eggs', items: [] },
   { id: 'meat', label: 'Meat & Seafood', items: [] },
@@ -179,59 +243,102 @@ const defaultSections = [
   { id: 'beverages', label: 'Beverages', items: [] },
   { id: 'other', label: 'Other', items: [] },
 ];
-let sections = JSON.parse(JSON.stringify(defaultSections));
-let checked = {};
+
+// ── State ──
+let currentList = null; // { id, title, date, notes, sections, checked, createdAt }
+let history = [];
 
 function uid() { return '_' + Math.random().toString(36).substr(2, 9); }
 
-function saveState() {
-  localStorage.setItem('grocery_sections', JSON.stringify(sections));
-  localStorage.setItem('grocery_checked', JSON.stringify(checked));
-  localStorage.setItem('grocery_title', document.getElementById('tripTitle').textContent);
-  localStorage.setItem('grocery_date', document.getElementById('tripDate').textContent);
-  localStorage.setItem('grocery_notes', document.getElementById('notesInput').value);
+function save() {
+  localStorage.setItem('grocery_current', JSON.stringify(currentList));
+  localStorage.setItem('grocery_history', JSON.stringify(history));
 }
 
-function loadState() {
-  const s = localStorage.getItem('grocery_sections');
-  const c = localStorage.getItem('grocery_checked');
-  const t = localStorage.getItem('grocery_title');
-  const d = localStorage.getItem('grocery_date');
-  const n = localStorage.getItem('grocery_notes');
-  if (s) sections = JSON.parse(s);
-  if (c) checked = JSON.parse(c);
-  if (t) { document.getElementById('tripTitle').textContent = t; document.getElementById('titleInput').value = t; }
-  if (d) { document.getElementById('tripDate').textContent = d; document.getElementById('dateInput').value = d; }
-  if (n) document.getElementById('notesInput').value = n;
+function load() {
+  const c = localStorage.getItem('grocery_current');
+  const h = localStorage.getItem('grocery_history');
+  if (c) currentList = JSON.parse(c);
+  if (h) history = JSON.parse(h);
+  // migrate old single-list format
+  if (!currentList && !h) {
+    const oldSec = localStorage.getItem('grocery_sections');
+    if (oldSec) {
+      currentList = {
+        id: uid(),
+        title: localStorage.getItem('grocery_title') || 'Grocery List',
+        date: localStorage.getItem('grocery_date') || '',
+        notes: localStorage.getItem('grocery_notes') || '',
+        sections: JSON.parse(oldSec),
+        checked: JSON.parse(localStorage.getItem('grocery_checked') || '{}'),
+        createdAt: new Date().toISOString(),
+      };
+      // clean up old keys
+      ['grocery_sections','grocery_checked','grocery_title','grocery_date','grocery_notes'].forEach(k => localStorage.removeItem(k));
+      save();
+    }
+  }
 }
 
-function populateQuickSection() {
-  const sel = document.getElementById('quickSection');
-  sel.innerHTML = '';
-  sections.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.id;
-    opt.textContent = s.label;
-    sel.appendChild(opt);
+// ── Tabs ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'current') || (i === 1 && tab === 'history'));
   });
+  document.getElementById('viewCurrent').classList.toggle('active', tab === 'current');
+  document.getElementById('viewHistory').classList.toggle('active', tab === 'history');
+  if (tab === 'history') renderHistory();
 }
 
-function quickAdd() {
-  const name = document.getElementById('quickName').value.trim();
-  if (!name) return;
-  const sectionId = document.getElementById('quickSection').value;
-  const section = sections.find(s => s.id === sectionId);
-  if (!section) return;
-  section.items.push({ id: uid(), qty: '', name, note: '', recipe: '' });
-  document.getElementById('quickName').value = '';
-  saveState();
+// ── Current list view ──
+function showCurrentView() {
+  if (!currentList) {
+    document.getElementById('heroBar').style.display = 'none';
+    document.getElementById('bottomBar').style.display = 'none';
+    document.getElementById('newListPrompt').style.display = '';
+    document.getElementById('content').innerHTML = '';
+    // Pre-fill date with today
+    const d = new Date();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('newDate').value = `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    document.getElementById('newTitle').focus();
+    return;
+  }
+  document.getElementById('newListPrompt').style.display = 'none';
+  document.getElementById('heroBar').style.display = '';
+  document.getElementById('bottomBar').style.display = '';
+  document.getElementById('tripTitle').textContent = currentList.title;
+  document.getElementById('tripDate').textContent = currentList.date;
+  document.getElementById('titleSep').style.display = currentList.date ? '' : 'none';
+  document.getElementById('titleInput').value = currentList.title;
+  document.getElementById('dateInput').value = currentList.date;
+  document.getElementById('notesInput').value = currentList.notes || '';
   render();
 }
 
+function createList() {
+  const title = document.getElementById('newTitle').value.trim();
+  const date = document.getElementById('newDate').value.trim();
+  if (!title) { document.getElementById('newTitle').focus(); return; }
+  currentList = {
+    id: uid(),
+    title,
+    date,
+    notes: '',
+    sections: JSON.parse(JSON.stringify(DEFAULT_SECTIONS)),
+    checked: {},
+    createdAt: new Date().toISOString(),
+  };
+  save();
+  showCurrentView();
+}
+
 function render() {
+  if (!currentList) return;
+  const sections = currentList.sections;
+  const checked = currentList.checked;
   const container = document.getElementById('content');
   container.innerHTML = '';
-
   const totalItems = sections.reduce((sum, s) => sum + s.items.length, 0);
 
   if (totalItems === 0) {
@@ -240,7 +347,7 @@ function render() {
     empty.innerHTML = `
       <div class="empty-icon">🛒</div>
       <div class="empty-title">Your list is empty</div>
-      <div class="empty-sub">Use the bar above to start adding items</div>
+      <div class="empty-sub">Type above to start adding items</div>
     `;
     container.appendChild(empty);
   }
@@ -251,27 +358,25 @@ function render() {
     sec.className = 'section';
     const hdr = document.createElement('div');
     hdr.className = 'section-header';
-    const checkedInSection = section.items.filter(i => checked[i.id]).length;
-    const countLabel = section.items.length > 0 ? `${checkedInSection}/${section.items.length}` : '';
+    const checkedCount = section.items.filter(i => checked[i.id]).length;
+    const countLabel = section.items.length > 0 ? `${checkedCount}/${section.items.length}` : '';
     hdr.innerHTML = `
       <div class="section-left">
         <span class="section-label">${section.label}</span>
         <span class="section-count">${countLabel}</span>
-        <button class="section-remove" onclick="removeSection('${section.id}')" title="Remove section">&times;</button>
+        <button class="section-remove" onclick="removeSection('${section.id}')">&times;</button>
       </div>
-      <div class="section-actions">
-        <button class="add-item-btn" onclick="toggleAddForm('${section.id}')">+ Add</button>
-      </div>`;
+      <button class="add-item-btn" onclick="toggleAddForm('${section.id}')">+ Add</button>`;
     sec.appendChild(hdr);
     section.items.forEach((item, idx) => {
       if (!item.id) item.id = uid();
-      const isChecked = !!checked[item.id];
+      const done = !!checked[item.id];
       const row = document.createElement('div');
       row.className = 'item-row';
       row.innerHTML = `
-        <div class="cb ${isChecked ? 'checked' : ''}" onclick="toggleCheck('${item.id}', this)"></div>
+        <div class="cb ${done ? 'checked' : ''}" onclick="toggleCheck('${item.id}', this)"></div>
         <div class="item-body">
-          <div class="item-main ${isChecked ? 'done' : ''}">${item.qty ? `<span class="item-qty">${item.qty}</span> ` : ''}${item.name}</div>
+          <div class="item-main ${done ? 'done' : ''}">${item.qty ? `<span class="item-qty">${item.qty}</span> ` : ''}${item.name}</div>
           ${item.note ? `<div class="item-meta">${item.note}</div>` : ''}
           ${item.recipe ? `<div class="item-recipe">${item.recipe}</div>` : ''}
         </div>
@@ -298,7 +403,6 @@ function render() {
     container.appendChild(sec);
   });
 
-  // Add section bar
   const addBar = document.createElement('div');
   addBar.className = 'add-section-bar collapsed';
   addBar.id = 'addSectionBar';
@@ -315,57 +419,45 @@ function render() {
   updateProgress();
 }
 
-function showAddSection() {
-  const bar = document.getElementById('addSectionBar');
-  bar.classList.remove('collapsed');
-  bar.querySelector('.add-section-btn').style.display = 'none';
-  document.getElementById('newSectionName').focus();
+function populateQuickSection() {
+  if (!currentList) return;
+  const sel = document.getElementById('quickSection');
+  sel.innerHTML = '';
+  currentList.sections.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.label;
+    sel.appendChild(opt);
+  });
 }
 
-function hideAddSection() {
-  const bar = document.getElementById('addSectionBar');
-  bar.classList.add('collapsed');
-  bar.querySelector('.add-section-btn').style.display = '';
-  document.getElementById('newSectionName').value = '';
-}
-
-function addSection() {
-  const name = document.getElementById('newSectionName').value.trim();
+function quickAdd() {
+  if (!currentList) return;
+  const inp = document.getElementById('quickName');
+  const name = inp.value.trim();
   if (!name) return;
-  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + uid();
-  sections.push({ id, label: name, items: [] });
-  saveState();
-  render();
-}
-
-function removeSection(sectionId) {
-  const section = sections.find(s => s.id === sectionId);
+  const sectionId = document.getElementById('quickSection').value;
+  const section = currentList.sections.find(s => s.id === sectionId);
   if (!section) return;
-  const count = section.items.length;
-  const msg = count > 0
-    ? `Remove "${section.label}" and its ${count} item${count > 1 ? 's' : ''}?`
-    : `Remove empty section "${section.label}"?`;
-  if (!confirm(msg)) return;
-  section.items.forEach(item => { if (item.id) delete checked[item.id]; });
-  sections = sections.filter(s => s.id !== sectionId);
-  saveState();
+  section.items.push({ id: uid(), qty: '', name, note: '', recipe: '' });
+  inp.value = '';
+  save();
   render();
 }
 
 function toggleCheck(itemId, el) {
-  checked[itemId] = !checked[itemId];
-  el.classList.toggle('checked', checked[itemId]);
+  if (!currentList) return;
+  currentList.checked[itemId] = !currentList.checked[itemId];
+  el.classList.toggle('checked', currentList.checked[itemId]);
   const main = el.parentElement.querySelector('.item-main');
-  if (main) main.classList.toggle('done', checked[itemId]);
-  saveState();
+  if (main) main.classList.toggle('done', currentList.checked[itemId]);
+  save();
   updateProgress();
-  // Update section count without full re-render
   const sectionEl = el.closest('.section');
   if (sectionEl) {
     const countEl = sectionEl.querySelector('.section-count');
     if (countEl) {
-      const rows = sectionEl.querySelectorAll('.cb');
-      const total = rows.length;
+      const total = sectionEl.querySelectorAll('.cb').length;
       const done = sectionEl.querySelectorAll('.cb.checked').length;
       countEl.textContent = `${done}/${total}`;
     }
@@ -373,101 +465,229 @@ function toggleCheck(itemId, el) {
 }
 
 function deleteItem(sectionId, idx) {
-  const section = sections.find(s => s.id === sectionId);
+  if (!currentList) return;
+  const section = currentList.sections.find(s => s.id === sectionId);
   if (!section) return;
   const item = section.items[idx];
-  if (item && item.id) delete checked[item.id];
+  if (item && item.id) delete currentList.checked[item.id];
   section.items.splice(idx, 1);
-  saveState();
+  save();
   render();
 }
 
 function toggleAddForm(sectionId) {
   const form = document.getElementById(`form-${sectionId}`);
   form.classList.toggle('open');
-  if (form.classList.contains('open')) {
-    form.querySelector('input[id^="name-"]').focus();
-  }
+  if (form.classList.contains('open')) form.querySelector('input[id^="name-"]').focus();
 }
 
 function addItem(sectionId) {
+  if (!currentList) return;
   const qty = document.getElementById(`qty-${sectionId}`).value.trim();
   const name = document.getElementById(`name-${sectionId}`).value.trim();
   const note = document.getElementById(`note-${sectionId}`).value.trim();
   const recipe = document.getElementById(`recipe-${sectionId}`).value.trim();
   if (!name) return;
-  const section = sections.find(s => s.id === sectionId);
+  const section = currentList.sections.find(s => s.id === sectionId);
   if (!section) return;
   section.items.push({ id: uid(), qty: qty || '', name, note, recipe });
-  saveState();
+  save();
   render();
   const form = document.getElementById(`form-${sectionId}`);
-  if (form) {
-    form.classList.add('open');
-    form.querySelector('input[id^="name-"]').focus();
-  }
+  if (form) { form.classList.add('open'); form.querySelector('input[id^="name-"]').focus(); }
+}
+
+function showAddSection() {
+  const bar = document.getElementById('addSectionBar');
+  bar.classList.remove('collapsed');
+  bar.querySelector('.add-section-btn').style.display = 'none';
+  document.getElementById('newSectionName').focus();
+}
+function hideAddSection() {
+  const bar = document.getElementById('addSectionBar');
+  bar.classList.add('collapsed');
+  bar.querySelector('.add-section-btn').style.display = '';
+  document.getElementById('newSectionName').value = '';
+}
+function addSection() {
+  if (!currentList) return;
+  const name = document.getElementById('newSectionName').value.trim();
+  if (!name) return;
+  currentList.sections.push({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + uid(), label: name, items: [] });
+  save();
+  render();
+}
+function removeSection(sectionId) {
+  if (!currentList) return;
+  const section = currentList.sections.find(s => s.id === sectionId);
+  if (!section) return;
+  const count = section.items.length;
+  const msg = count > 0 ? `Remove "${section.label}" and its ${count} item${count > 1 ? 's' : ''}?` : `Remove "${section.label}"?`;
+  if (!confirm(msg)) return;
+  section.items.forEach(item => { if (item.id) delete currentList.checked[item.id]; });
+  currentList.sections = currentList.sections.filter(s => s.id !== sectionId);
+  save();
+  render();
 }
 
 function resetAll() {
-  if (!confirm('Uncheck all items?')) return;
-  checked = {};
-  saveState();
-  render();
-}
-
-function newList() {
-  if (!confirm('Start a brand new list? This will clear everything.')) return;
-  sections = JSON.parse(JSON.stringify(defaultSections));
-  checked = {};
-  document.getElementById('tripTitle').textContent = 'Grocery List';
-  document.getElementById('tripDate').textContent = '';
-  document.getElementById('titleInput').value = '';
-  document.getElementById('dateInput').value = '';
-  document.getElementById('notesInput').value = '';
-  document.getElementById('notesArea').classList.remove('open');
-  document.getElementById('metaEdit').classList.remove('open');
-  saveState();
+  if (!currentList || !confirm('Uncheck all items?')) return;
+  currentList.checked = {};
+  save();
   render();
 }
 
 function toggleNotes() {
   document.getElementById('notesArea').classList.toggle('open');
 }
-
 function toggleMeta() {
   const el = document.getElementById('metaEdit');
   el.classList.toggle('open');
   if (el.classList.contains('open')) document.getElementById('titleInput').focus();
 }
-
 function saveMeta() {
-  const t = document.getElementById('titleInput').value.trim();
-  const d = document.getElementById('dateInput').value.trim();
-  document.getElementById('tripTitle').textContent = t || 'Grocery List';
-  document.getElementById('tripDate').textContent = d;
+  if (!currentList) return;
+  currentList.title = document.getElementById('titleInput').value.trim() || 'Grocery List';
+  currentList.date = document.getElementById('dateInput').value.trim();
+  document.getElementById('tripTitle').textContent = currentList.title;
+  document.getElementById('tripDate').textContent = currentList.date;
+  document.getElementById('titleSep').style.display = currentList.date ? '' : 'none';
   document.getElementById('metaEdit').classList.remove('open');
-  saveState();
+  save();
 }
 
 function updateProgress() {
+  if (!currentList) return;
   let total = 0;
-  sections.forEach(s => total += s.items.length);
-  const done = Object.values(checked).filter(Boolean).length;
+  currentList.sections.forEach(s => total += s.items.length);
+  const done = Object.values(currentList.checked).filter(Boolean).length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressLabel').textContent = total > 0
-    ? `${done} of ${total} items checked`
-    : 'No items yet';
+  document.getElementById('progressLabel').textContent = total > 0 ? `${done} of ${total} items` : 'No items yet';
 }
 
-// Enter key support for quick add
-document.getElementById('quickName').addEventListener('keydown', e => {
-  if (e.key === 'Enter') quickAdd();
+// ── Archive & new ──
+function archiveCurrentList() {
+  if (!currentList) return;
+  // Save notes before archiving
+  currentList.notes = document.getElementById('notesInput').value || '';
+  const totalItems = currentList.sections.reduce((sum, s) => sum + s.items.length, 0);
+  if (totalItems > 0) {
+    history.unshift({ ...currentList, archivedAt: new Date().toISOString() });
+  }
+}
+
+function archiveAndNew() {
+  if (!confirm('Save this list to history and start a new one?')) return;
+  archiveCurrentList();
+  currentList = null;
+  document.getElementById('notesArea').classList.remove('open');
+  document.getElementById('metaEdit').classList.remove('open');
+  save();
+  showCurrentView();
+}
+
+// ── History view ──
+function renderHistory() {
+  const container = document.getElementById('historyList');
+  container.innerHTML = '';
+  document.getElementById('historyCount').textContent = history.length > 0
+    ? `${history.length} saved list${history.length > 1 ? 's' : ''}`
+    : '';
+
+  if (history.length === 0) {
+    container.innerHTML = `
+      <div class="history-empty">
+        <div class="history-empty-icon">📋</div>
+        <div class="history-empty-title">No past lists yet</div>
+        <div class="history-empty-sub">Completed lists will appear here</div>
+      </div>`;
+    return;
+  }
+
+  history.forEach((list, idx) => {
+    const totalItems = list.sections.reduce((sum, s) => sum + s.items.length, 0);
+    const checkedItems = Object.values(list.checked).filter(Boolean).length;
+    const card = document.createElement('div');
+    card.className = 'history-card';
+    card.onclick = (e) => { if (!e.target.closest('.history-action-btn')) viewHistoryList(idx); };
+    card.innerHTML = `
+      <div class="history-badge">${list.title.charAt(0).toUpperCase()}</div>
+      <div class="history-info">
+        <div class="history-title">${list.title}</div>
+        <div class="history-date">${list.date || 'No date'}</div>
+        <div class="history-stats">${checkedItems}/${totalItems} items checked</div>
+      </div>
+      <div class="history-actions">
+        <button class="history-action-btn" onclick="restoreList(${idx})" title="Restore as current">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8a6 6 0 1 1 1.76 4.24"/><path d="M2 12V8h4"/></svg>
+        </button>
+        <button class="history-action-btn delete" onclick="deleteHistory(${idx})" title="Delete">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h10M5.5 4V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1M6 7v5M10 7v5M4 4l.8 9a1 1 0 0 0 1 .9h4.4a1 1 0 0 0 1-.9L12 4"/></svg>
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function viewHistoryList(idx) {
+  const list = history[idx];
+  if (!list) return;
+  let detail = `${list.title}`;
+  if (list.date) detail += ` — ${list.date}`;
+  const totalItems = list.sections.reduce((sum, s) => sum + s.items.length, 0);
+  const checkedItems = Object.values(list.checked).filter(Boolean).length;
+  detail += `\n${checkedItems}/${totalItems} items checked`;
+  if (list.notes) detail += `\n\nNotes: ${list.notes}`;
+  detail += '\n\nItems:\n';
+  list.sections.forEach(s => {
+    const items = s.items;
+    if (items.length === 0) return;
+    detail += `\n${s.label}:\n`;
+    items.forEach(i => {
+      const mark = list.checked[i.id] ? '✓' : '○';
+      detail += `  ${mark} ${i.qty ? i.qty + ' ' : ''}${i.name}${i.note ? ' — ' + i.note : ''}\n`;
+    });
+  });
+  alert(detail);
+}
+
+function restoreList(idx) {
+  const list = history[idx];
+  if (!list) return;
+  if (currentList) {
+    if (!confirm(`This will archive your current list and restore "${list.title}". Continue?`)) return;
+    archiveCurrentList();
+  }
+  currentList = JSON.parse(JSON.stringify(list));
+  history.splice(idx, 1);
+  save();
+  switchTab('current');
+  showCurrentView();
+}
+
+function deleteHistory(idx) {
+  const list = history[idx];
+  if (!list || !confirm(`Delete "${list.title}" from history?`)) return;
+  history.splice(idx, 1);
+  save();
+  renderHistory();
+}
+
+// ── Save notes on input ──
+document.getElementById('notesInput').addEventListener('input', () => {
+  if (currentList) { currentList.notes = document.getElementById('notesInput').value; save(); }
 });
 
-document.getElementById('notesInput').addEventListener('input', saveState);
-loadState();
-render();
+// ── Enter key on quick add & new list ──
+document.getElementById('quickName').addEventListener('keydown', e => { if (e.key === 'Enter') quickAdd(); });
+document.getElementById('newTitle').addEventListener('keydown', e => { if (e.key === 'Enter') { document.getElementById('newDate').focus(); } });
+document.getElementById('newDate').addEventListener('keydown', e => { if (e.key === 'Enter') createList(); });
+
+// ── Init ──
+load();
+showCurrentView();
 </script>
 </body>
 </html>
