@@ -829,34 +829,15 @@ function parseText(text) {
 function importPaste() {
   if (!currentList) return;
   const text = document.getElementById('pasteInput').value;
-  const defaultSectionId = document.getElementById('pasteSection').value;
+  const sectionId = document.getElementById('pasteSection').value;
+  const section = currentList.sections.find(s => s.id === sectionId);
+  if (!section) return;
 
   const items = parseText(text);
   if (items.length === 0) return;
 
-  // Group items by recipe header; items without a recipe go to the selected section
-  const recipeGroups = {};
-  items.forEach(item => {
-    const key = item.recipe || '';
-    if (!recipeGroups[key]) recipeGroups[key] = [];
-    recipeGroups[key].push(item);
-  });
-
-  Object.entries(recipeGroups).forEach(([recipe, groupItems]) => {
-    let section;
-    if (recipe) {
-      // Find existing section with matching label, or create new one
-      section = currentList.sections.find(s => s.label.toLowerCase() === recipe.toLowerCase());
-      if (!section) {
-        section = { id: uid(), label: recipe, items: [] };
-        currentList.sections.push(section);
-      }
-    } else {
-      section = currentList.sections.find(s => s.id === defaultSectionId);
-    }
-    if (!section) return;
-    groupItems.forEach(item => { item.recipe = ''; section.items.push(item); });
-  });
+  // Recipe headers stay as tags on each item (recipe field), all items go into selected section
+  items.forEach(item => section.items.push(item));
 
   document.getElementById('pastePanel').classList.remove('open');
   document.getElementById('pasteInput').value = '';
