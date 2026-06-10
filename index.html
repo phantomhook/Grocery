@@ -154,8 +154,9 @@
   .welcome-opt-title { font-size: 15px; font-weight: 600; }
   .welcome-opt-desc { font-size: 12px; color: #999; margin-top: 2px; }
   .welcome-opt-arrow { color: #ccc; font-size: 18px; flex-shrink: 0; }
-  .welcome-form { max-width: 400px; margin: 20px auto 0; display: none; }
-  .welcome-form.open { display: block; }
+  .welcome-step { max-width: 400px; margin: 0 auto; }
+  .welcome-step h2 { margin-bottom: 4px; }
+  .welcome-step p { margin-bottom: 18px; }
   .welcome-form-label { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; text-align: left; }
   .new-list-row { display: flex; gap: 8px; margin-bottom: 10px; }
   .new-list-row input { flex: 1; border: 1.5px solid #e0dfdb; border-radius: 10px; padding: 12px 14px; font-size: 15px; font-family: inherit; color: #1a1a1a; background: #fafaf8; }
@@ -275,33 +276,35 @@
         <div class="welcome-brand-name">Cartful</div>
         <div class="welcome-brand-tag">Smart grocery lists, made simple</div>
       </div>
-      <h2>What would you like to do?</h2>
-      <p>Start fresh, paste items from a recipe, or build as you go.</p>
-      <div class="welcome-options">
-        <button class="welcome-opt" onclick="welcomePaste()">
-          <div class="welcome-opt-icon">📋</div>
-          <div class="welcome-opt-text">
-            <div class="welcome-opt-title">Paste a list</div>
-            <div class="welcome-opt-desc">Paste items from a recipe or notes — auto-sorted into sections</div>
-          </div>
-          <div class="welcome-opt-arrow">›</div>
-        </button>
-        <button class="welcome-opt" onclick="welcomeStart()">
-          <div class="welcome-opt-icon">✏️</div>
-          <div class="welcome-opt-text">
-            <div class="welcome-opt-title">Start a new list</div>
-            <div class="welcome-opt-desc">Name your trip and add items one by one</div>
-          </div>
-          <div class="welcome-opt-arrow">›</div>
-        </button>
-      </div>
-      <div class="welcome-form" id="welcomeForm">
+      <div class="welcome-step" id="welcomeStep1">
         <div class="welcome-form-label">Name your list</div>
         <div class="new-list-row">
           <input type="text" id="newTitle" placeholder="e.g. Johnsville Trip">
           <input type="text" id="newDate" placeholder="e.g. June 15">
         </div>
-        <button class="new-list-go" id="welcomeGoBtn" onclick="createList()">Create list</button>
+        <button class="new-list-go" onclick="welcomeNext()">Next</button>
+      </div>
+      <div class="welcome-step" id="welcomeStep2" style="display:none">
+        <h2>How do you want to add items?</h2>
+        <p>You can always switch methods later.</p>
+        <div class="welcome-options">
+          <button class="welcome-opt" onclick="welcomeCreateAndPaste()">
+            <div class="welcome-opt-icon">📋</div>
+            <div class="welcome-opt-text">
+              <div class="welcome-opt-title">Paste a list</div>
+              <div class="welcome-opt-desc">Paste from a recipe or notes — auto-sorted into sections</div>
+            </div>
+            <div class="welcome-opt-arrow">›</div>
+          </button>
+          <button class="welcome-opt" onclick="welcomeCreateAndStart()">
+            <div class="welcome-opt-icon">✏️</div>
+            <div class="welcome-opt-text">
+              <div class="welcome-opt-title">Add items manually</div>
+              <div class="welcome-opt-desc">Build your list one item at a time</div>
+            </div>
+            <div class="welcome-opt-arrow">›</div>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -430,9 +433,10 @@ function showCurrentView() {
     document.getElementById('bottomBar').style.display = 'none';
     document.getElementById('newListPrompt').style.display = '';
     document.getElementById('content').innerHTML = '';
-    // Pre-fill date with today, reset welcome state
+    // Pre-fill date with today, reset welcome steps
     document.getElementById('newDate').value = todayStr();
-    document.getElementById('welcomeForm').classList.remove('open');
+    document.getElementById('welcomeStep1').style.display = '';
+    document.getElementById('welcomeStep2').style.display = 'none';
     return;
   }
   document.getElementById('newListPrompt').style.display = 'none';
@@ -464,23 +468,20 @@ function createList() {
   showCurrentView();
 }
 
-function welcomeStart() {
-  const form = document.getElementById('welcomeForm');
-  form.classList.add('open');
-  document.getElementById('welcomeGoBtn').textContent = 'Create list';
-  document.getElementById('welcomeGoBtn').onclick = createList;
-  document.getElementById('newTitle').focus();
+function welcomeNext() {
+  const title = document.getElementById('newTitle').value.trim();
+  if (!title) { document.getElementById('newTitle').focus(); return; }
+  document.getElementById('welcomeStep1').style.display = 'none';
+  document.getElementById('welcomeStep2').style.display = '';
 }
 
-function welcomePaste() {
-  const form = document.getElementById('welcomeForm');
-  form.classList.add('open');
-  document.getElementById('welcomeGoBtn').textContent = 'Create & paste';
-  document.getElementById('welcomeGoBtn').onclick = function () {
-    createList();
-    if (currentList) togglePaste();
-  };
-  document.getElementById('newTitle').focus();
+function welcomeCreateAndStart() {
+  createList();
+}
+
+function welcomeCreateAndPaste() {
+  createList();
+  if (currentList) togglePaste();
 }
 
 function render() {
