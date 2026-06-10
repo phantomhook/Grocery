@@ -264,12 +264,8 @@
     <div class="paste-header">
       <span class="paste-title">Paste a list</span>
     </div>
-    <div class="paste-hint">One item per line. Quantities and units are auto-detected. Lines ending with ":" become recipe/section tags for the items below them.</div>
+    <div class="paste-hint">One item per line. Quantities, units, and grocery sections are auto-detected. Lines ending with ":" become recipe tags.</div>
     <textarea class="paste-textarea" id="pasteInput" placeholder="Asian Slaw:&#10;2 cups shredded cabbage&#10;1 cup bean sprouts&#10;3 green onions&#10;&#10;Slaw Dressing:&#10;2 tbsp rice vinegar&#10;1 tbsp sesame oil&#10;1 tsp honey"></textarea>
-    <div class="paste-options">
-      <label>Add to:</label>
-      <select id="pasteSection"></select>
-    </div>
     <div class="paste-preview" id="pastePreview"></div>
     <div class="paste-actions">
       <button class="btn-cancel" onclick="togglePaste()">Cancel</button>
@@ -698,24 +694,12 @@ function togglePaste() {
   const panel = document.getElementById('pastePanel');
   panel.classList.toggle('open');
   if (panel.classList.contains('open')) {
-    populatePasteSection();
     document.getElementById('pasteInput').value = '';
     document.getElementById('pastePreview').textContent = '';
     document.getElementById('pasteInput').focus();
   }
 }
 
-function populatePasteSection() {
-  if (!currentList) return;
-  const sel = document.getElementById('pasteSection');
-  sel.innerHTML = '';
-  currentList.sections.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.id;
-    opt.textContent = s.label;
-    sel.appendChild(opt);
-  });
-}
 
 // Units for qty detection
 const UNITS = 'lbs?|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|gal|gallons?|liters?|ml|kg|g|grams?|bunch|bunches|head|heads|dozen|doz|cans?|bags?|boxes?|bottles?|jars?|packs?|pkgs?|packages?|pieces?|pcs?|stalks?|cloves?|slices?|sticks?|loaves?|loaf|large|small|medium|med|whole|handfuls?|sprigs?|ribs?|ears?|links?|fillets?|breasts?|thighs?|legs?|quarts?|qt|pints?|pt|pinch|pinches|dashes?|drops?';
@@ -826,18 +810,57 @@ function parseText(text) {
   return results;
 }
 
+// ── Auto-detect grocery section by item name ──
+const SECTION_KEYWORDS = {
+  'Produce': ['cabbage','lettuce','spinach','kale','arugula','chard','collard','bok choy','broccoli','cauliflower','carrot','celery','cucumber','tomato','tomatoes','pepper','peppers','chili','chile','jalapeño','jalapeno','onion','onions','shallot','garlic','ginger','potato','potatoes','sweet potato','yam','squash','zucchini','eggplant','mushroom','mushrooms','corn','asparagus','artichoke','beet','beets','radish','turnip','parsnip','bean sprout','sprouts','avocado','lemon','lime','limes','lemons','orange','oranges','apple','apples','banana','bananas','berries','strawberr','blueberr','raspberr','blackberr','grape','grapes','melon','watermelon','mango','pineapple','peach','pear','plum','cherry','cherries','kiwi','papaya','coconut','fig','pomegranate','cilantro','parsley','basil','mint','dill','rosemary','thyme','chive','oregano','sage','scallion','green onion','bean sprouts','fresh herb','herbs'],
+  'Meat & Seafood': ['chicken','beef','steak','pork','lamb','turkey','ground meat','ground beef','ground turkey','sausage','bacon','ham','prosciutto','salami','pepperoni','ribs','brisket','roast','chop','filet','fillet','tenderloin','sirloin','salmon','tuna','shrimp','prawn','crab','lobster','cod','tilapia','halibut','trout','mahi','fish','seafood','clam','mussel','oyster','scallop','anchov','breast','thigh','wing','drumstick'],
+  'Dairy & Eggs': ['milk','cream','half and half','butter','cheese','cheddar','mozzarella','parmesan','feta','gouda','brie','swiss','provolone','ricotta','cottage cheese','cream cheese','sour cream','yogurt','egg','eggs','whipping cream','heavy cream'],
+  'Bakery & Bread': ['bread','rolls','buns','baguette','tortilla','tortillas','pita','naan','croissant','muffin','bagel','english muffin','flatbread','ciabatta','sourdough','wraps','cornbread','biscuit','crouton'],
+  'Pantry': ['rice','pasta','noodle','noodles','spaghetti','penne','macaroni','flour','sugar','brown sugar','powdered sugar','salt','oil','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','peanut oil','avocado oil','vinegar','rice vinegar','balsamic','soy sauce','fish sauce','hot sauce','sriracha','ketchup','mustard','mayo','mayonnaise','honey','maple syrup','molasses','vanilla','extract','baking soda','baking powder','yeast','cornstarch','cocoa','chocolate','broth','stock','bouillon','tomato paste','tomato sauce','canned tomato','diced tomato','crushed tomato','beans','black beans','kidney beans','chickpea','lentil','oat','oats','oatmeal','cereal','granola','pancake','peanut butter','almond butter','jam','jelly','preserve','canned','tuna can','soup','ramen','couscous','quinoa','barley','breadcrumb','cracker','panko'],
+  'Spices & Seasonings': ['cumin','paprika','cinnamon','nutmeg','turmeric','curry','chili powder','cayenne','black pepper','white pepper','red pepper flake','garlic powder','onion powder','italian seasoning','bay leaf','bay leaves','coriander','cardamom','clove','allspice','fennel seed','mustard seed','sesame seed','sesame seeds','poppy seed','caraway','star anise','saffron','smoked paprika','everything bagel','taco seasoning','seasoning','spice'],
+  'Frozen': ['frozen','ice cream','popsicle','frozen pizza','frozen fruit','frozen vegetable','frozen dinner','frozen meal','frozen waffle','frozen fries'],
+  'Beverages': ['water','juice','soda','pop','cola','coffee','tea','kombucha','lemonade','sports drink','energy drink','sparkling','seltzer','wine','beer','liquor','spirit'],
+  'Snacks': ['chips','crackers','pretzel','popcorn','nuts','peanuts','almonds','cashews','walnuts','pecans','pistachios','trail mix','granola bar','protein bar','dried fruit','raisins','jerky','cookie','cookies','candy','chocolate bar','snack'],
+  'Condiments & Sauces': ['dressing','ranch','bbq sauce','barbecue','teriyaki','worcestershire','hoisin','pesto','salsa','guacamole','hummus','relish','capers','olives','pickle','pickles','chutney','mirin','tahini'],
+};
+
+function detectSection(itemName) {
+  const lower = itemName.toLowerCase();
+  let best = null;
+  let bestLen = 0;
+  for (const [section, keywords] of Object.entries(SECTION_KEYWORDS)) {
+    for (const kw of keywords) {
+      if (lower.includes(kw) && kw.length > bestLen) {
+        best = section;
+        bestLen = kw.length;
+      }
+    }
+  }
+  return best || 'Other';
+}
+
+function getOrCreateSection(label) {
+  let section = currentList.sections.find(s => s.label.toLowerCase() === label.toLowerCase());
+  if (!section) {
+    section = { id: uid(), label, items: [] };
+    currentList.sections.push(section);
+  }
+  return section;
+}
+
 function importPaste() {
   if (!currentList) return;
   const text = document.getElementById('pasteInput').value;
-  const sectionId = document.getElementById('pasteSection').value;
-  const section = currentList.sections.find(s => s.id === sectionId);
-  if (!section) return;
 
   const items = parseText(text);
   if (items.length === 0) return;
 
-  // Recipe headers stay as tags on each item (recipe field), all items go into selected section
-  items.forEach(item => section.items.push(item));
+  // Auto-sort each item into a detected grocery section
+  items.forEach(item => {
+    const sectionLabel = detectSection(item.name);
+    const section = getOrCreateSection(sectionLabel);
+    section.items.push(item);
+  });
 
   document.getElementById('pastePanel').classList.remove('open');
   document.getElementById('pasteInput').value = '';
@@ -994,10 +1017,13 @@ document.getElementById('pasteInput').addEventListener('input', () => {
   const items = parseText(text);
   const el = document.getElementById('pastePreview');
   if (items.length > 0) {
-    const recipes = [...new Set(items.map(i => i.recipe).filter(Boolean))];
-    let msg = `${items.length} item${items.length > 1 ? 's' : ''} detected`;
-    if (recipes.length > 0) msg += ` in ${recipes.length} section${recipes.length > 1 ? 's' : ''}: ${recipes.join(', ')}`;
-    el.textContent = msg;
+    const sectionCounts = {};
+    items.forEach(item => {
+      const sec = detectSection(item.name);
+      sectionCounts[sec] = (sectionCounts[sec] || 0) + 1;
+    });
+    const breakdown = Object.entries(sectionCounts).map(([s, c]) => `${s} (${c})`).join(', ');
+    el.textContent = `${items.length} item${items.length > 1 ? 's' : ''} → ${breakdown}`;
   } else {
     el.textContent = '';
   }
