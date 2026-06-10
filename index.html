@@ -249,6 +249,11 @@ let currentList = null; // { id, title, date, notes, sections, checked, createdA
 let history = [];
 
 function uid() { return '_' + Math.random().toString(36).substr(2, 9); }
+function todayStr() {
+  const d = new Date();
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
 
 function save() {
   localStorage.setItem('grocery_current', JSON.stringify(currentList));
@@ -258,7 +263,10 @@ function save() {
 function load() {
   const c = localStorage.getItem('grocery_current');
   const h = localStorage.getItem('grocery_history');
-  if (c) currentList = JSON.parse(c);
+  if (c) {
+    currentList = JSON.parse(c);
+    if (currentList && !currentList.date) { currentList.date = todayStr(); }
+  }
   if (h) history = JSON.parse(h);
   // migrate old single-list format
   if (!currentList && !h) {
@@ -267,7 +275,7 @@ function load() {
       currentList = {
         id: uid(),
         title: localStorage.getItem('grocery_title') || 'Grocery List',
-        date: localStorage.getItem('grocery_date') || '',
+        date: localStorage.getItem('grocery_date') || todayStr(),
         notes: localStorage.getItem('grocery_notes') || '',
         sections: JSON.parse(oldSec),
         checked: JSON.parse(localStorage.getItem('grocery_checked') || '{}'),
@@ -298,9 +306,7 @@ function showCurrentView() {
     document.getElementById('newListPrompt').style.display = '';
     document.getElementById('content').innerHTML = '';
     // Pre-fill date with today
-    const d = new Date();
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    document.getElementById('newDate').value = `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    document.getElementById('newDate').value = todayStr();
     document.getElementById('newTitle').focus();
     return;
   }
@@ -318,7 +324,7 @@ function showCurrentView() {
 
 function createList() {
   const title = document.getElementById('newTitle').value.trim();
-  const date = document.getElementById('newDate').value.trim();
+  const date = document.getElementById('newDate').value.trim() || todayStr();
   if (!title) { document.getElementById('newTitle').focus(); return; }
   currentList = {
     id: uid(),
