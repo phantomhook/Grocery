@@ -261,8 +261,8 @@
     <div class="paste-header">
       <span class="paste-title">Paste a list</span>
     </div>
-    <div class="paste-hint">One item per line. Quantities at the start are detected automatically.<br>e.g. "2 lbs chicken thighs" or "eggs" or "1/2 cup heavy cream"</div>
-    <textarea class="paste-textarea" id="pasteInput" placeholder="2 lbs chicken thighs&#10;1 dozen eggs&#10;whole milk&#10;3 avocados&#10;fresh cilantro"></textarea>
+    <div class="paste-hint">One item per line. Quantities and units are auto-detected. Lines ending with ":" become recipe/section tags for the items below them.</div>
+    <textarea class="paste-textarea" id="pasteInput" placeholder="Asian Slaw:&#10;2 cups shredded cabbage&#10;1 cup bean sprouts&#10;3 green onions&#10;&#10;Slaw Dressing:&#10;2 tbsp rice vinegar&#10;1 tbsp sesame oil&#10;1 tsp honey"></textarea>
     <div class="paste-options">
       <label>Add to:</label>
       <select id="pasteSection"></select>
@@ -689,6 +689,19 @@ function populatePasteSection() {
   });
 }
 
+// Units for qty detection
+const UNITS = 'lbs?|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|gal|gallons?|liters?|ml|kg|g|grams?|bunch|bunches|head|heads|dozen|doz|cans?|bags?|boxes?|bottles?|jars?|packs?|pkgs?|packages?|pieces?|pcs?|stalks?|cloves?|slices?|sticks?|loaves?|loaf|large|small|medium|med|whole|handfuls?|sprigs?|ribs?|ears?|links?|fillets?|breasts?|thighs?|legs?|quarts?|qt|pints?|pt|pinch|pinches|dashes?|drops?';
+
+function isHeaderLine(line) {
+  const trimmed = line.trim();
+  // "For the slaw:", "SLAW:", "Asian Dressing:", "## Produce", "Slaw Ingredients"
+  if (/^#+\s+/.test(trimmed)) return trimmed.replace(/^#+\s+/, '').replace(/:?\s*$/, '').trim();
+  if (/:\s*$/.test(trimmed) && trimmed.length < 60 && !/\d/.test(trimmed.charAt(0))) return trimmed.replace(/:?\s*$/, '').trim();
+  // ALL CAPS short lines (less than 40 chars, at least 3 chars, no digits at start)
+  if (trimmed.length >= 3 && trimmed.length < 40 && trimmed === trimmed.toUpperCase() && /^[A-Z]/.test(trimmed) && !/^\d/.test(trimmed)) return trimmed.replace(/:?\s*$/, '').trim();
+  return null;
+}
+
 function parseLine(line) {
   line = line.trim();
   if (!line) return null;
@@ -699,43 +712,79 @@ function parseLine(line) {
   line = line.trim();
   if (!line) return null;
 
-  // Try to extract qty from the start
-  // Patterns: "2 lbs", "1/2 cup", "½ cup", "12", "1.5 oz", "2-3", "1 dozen"
-  const qtyPattern = /^(\d+[\/.]\d+|\d+[-–]\d+|\d+\.?\d*)\s*(lbs?|oz|cups?|tbsp|tsp|gal|gallons?|liters?|ml|kg|g|bunch|bunches|head|heads|dozen|doz|cans?|bags?|boxes?|bottles?|jars?|packs?|pkgs?|pieces?|pcs?|stalks?|cloves?|slices?|sticks?|loaves?|loaf|large|small|medium|med|whole|handfuls?|sprigs?)?\s*/i;
-  const fracPattern = /^([½¼¾⅓⅔⅛⅜⅝⅞])\s*(lbs?|oz|cups?|tbsp|tsp|gal|gallons?|liters?|ml|kg|g|bunch|bunches|head|heads|dozen|doz|cans?|bags?|boxes?|bottles?|jars?|packs?|pkgs?|pieces?|pcs?|stalks?|cloves?|slices?|sticks?|loaves?|loaf|large|small|medium|med|whole|handfuls?|sprigs?)?\s*/i;
+  // Build qty regex dynamically with all units
+  const unitGroup = `(?:${UNITS})`;
+  // Match patterns like: "2 cups", "1/2 tsp", "1 1/2 cups", "½ cup", "2-3 lbs", "1.5 oz", plain "2"
+  const qtyRe = new RegExp(
+    `^(\\d+\\s+\\d+[/]\\d+|\\d+[/.]\\d+|\\d+[-–]\\d+|[½¼¾⅓⅔⅛⅜⅝⅞]|\\d+\\.?\\d*)\\s*(${unitGroup})?\\s*\\.?\\s*`,
+    'i'
+  );
 
   let qty = '';
   let name = line;
 
-  const fracMatch = line.match(fracPattern);
-  const qtyMatch = line.match(qtyPattern);
-
-  if (fracMatch && fracMatch[0].length > 0) {
-    qty = fracMatch[0].trim();
-    name = line.slice(fracMatch[0].length).trim();
-  } else if (qtyMatch && qtyMatch[0].length > 0) {
-    qty = qtyMatch[0].trim();
+  const qtyMatch = line.match(qtyRe);
+  if (qtyMatch && qtyMatch[0].trim().length > 0) {
+    qty = qtyMatch[0].trim().replace(/\.\s*$/, '');
     name = line.slice(qtyMatch[0].length).trim();
   }
 
-  // Clean up name: remove trailing commas, parenthetical notes
+  // If no qty found, check for trailing qty in parens: "onion (2)" or "garlic (3 cloves)"
+  if (!qty) {
+    const trailingQty = name.match(/\((\d+[\s/.]?\d*\s*(?:${UNITS})?)\)\s*$/i);
+    if (trailingQty) {
+      qty = trailingQty[1].trim();
+      name = name.slice(0, trailingQty.index).trim();
+    }
+  }
+
+  // Extract notes from remaining parentheses
   let note = '';
   const parenMatch = name.match(/\(([^)]+)\)\s*$/);
   if (parenMatch) {
     note = parenMatch[1].trim();
     name = name.slice(0, parenMatch.index).trim();
   }
-  // Check for " - note" or " -- note" at end
+  // Check for " - note" or " -- note" or ", note" after a comma where note looks descriptive
   const dashNote = name.match(/\s+[-–—]+\s+(.+)$/);
   if (dashNote) {
-    note = dashNote[1].trim();
+    note = note ? `${dashNote[1].trim()}; ${note}` : dashNote[1].trim();
     name = name.slice(0, dashNote.index).trim();
   }
+
+  // Strip "of" at the start: "2 cups of sugar" → qty="2 cups", name="sugar"
+  name = name.replace(/^of\s+/i, '');
 
   name = name.replace(/,\s*$/, '').trim();
   if (!name) return null;
 
   return { id: uid(), qty, name, note, recipe: '' };
+}
+
+function parseText(text) {
+  const lines = text.split('\n');
+  const results = [];
+  let currentRecipe = '';
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    // Check if this line is a section/recipe header
+    const header = isHeaderLine(trimmed);
+    if (header) {
+      currentRecipe = header;
+      return;
+    }
+
+    const item = parseLine(trimmed);
+    if (item) {
+      if (currentRecipe) item.recipe = currentRecipe;
+      results.push(item);
+    }
+  });
+
+  return results;
 }
 
 function importPaste() {
@@ -745,17 +794,10 @@ function importPaste() {
   const section = currentList.sections.find(s => s.id === sectionId);
   if (!section) return;
 
-  const lines = text.split('\n');
-  let count = 0;
-  lines.forEach(line => {
-    const item = parseLine(line);
-    if (item) {
-      section.items.push(item);
-      count++;
-    }
-  });
+  const items = parseText(text);
+  if (items.length === 0) return;
 
-  if (count === 0) return;
+  items.forEach(item => section.items.push(item));
   document.getElementById('pastePanel').classList.remove('open');
   save();
   render();
@@ -907,11 +949,13 @@ document.getElementById('notesInput').addEventListener('input', () => {
 // ── Live preview for paste ──
 document.getElementById('pasteInput').addEventListener('input', () => {
   const text = document.getElementById('pasteInput').value;
-  const lines = text.split('\n').filter(l => l.trim());
-  const parsed = lines.map(parseLine).filter(Boolean);
+  const items = parseText(text);
   const el = document.getElementById('pastePreview');
-  if (parsed.length > 0) {
-    el.textContent = `${parsed.length} item${parsed.length > 1 ? 's' : ''} detected`;
+  if (items.length > 0) {
+    const recipes = [...new Set(items.map(i => i.recipe).filter(Boolean))];
+    let msg = `${items.length} item${items.length > 1 ? 's' : ''} detected`;
+    if (recipes.length > 0) msg += ` in ${recipes.length} section${recipes.length > 1 ? 's' : ''}: ${recipes.join(', ')}`;
+    el.textContent = msg;
   } else {
     el.textContent = '';
   }
