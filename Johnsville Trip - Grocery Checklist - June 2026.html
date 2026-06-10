@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grocery Checklist</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; font-size: 16px; }
+  .header { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 1rem 1.25rem; position: sticky; top: 0; z-index: 10; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .title-block { flex: 1; }
+  .trip-title { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+  .trip-date { font-size: 13px; color: #888; margin-top: 2px; }
+  .progress-wrap { margin-top: 10px; }
+  .progress-bar { height: 4px; background: #e0e0d8; border-radius: 2px; }
+  .progress-fill { height: 4px; background: #2a7a4f; border-radius: 2px; transition: width 0.3s ease; width: 0%; }
+  .progress-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .edit-btn { font-size: 12px; color: #555; background: none; border: 1px solid #ddd; border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+  .edit-btn:active { background: #f0f0eb; }
+  .notes-area { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 0.75rem 1.25rem; display: none; }
+  .notes-area.open { display: block; }
+  .notes-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .notes-input { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; resize: vertical; min-height: 70px; }
+  .meta-edit { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 0.75rem 1.25rem; display: none; }
+  .meta-edit.open { display: block; }
+  .meta-row { display: flex; gap: 10px; margin-bottom: 8px; }
+  .meta-row input { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; }
+  .meta-save { font-size: 13px; background: #2a7a4f; color: #fff; border: none; border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+  .content { padding: 0.5rem 0 4rem; }
+  .section { margin-bottom: 0.5rem; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1.25rem 0.4rem; background: #f5f5f0; }
+  .section-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  .add-item-btn { font-size: 12px; color: #2a7a4f; background: none; border: none; cursor: pointer; padding: 2px 0; }
+  .item-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 1.25rem; background: #fff; border-bottom: 0.5px solid #efefea; }
+  .item-row:first-of-type { border-top: 0.5px solid #efefea; }
+  .cb { width: 18px; height: 18px; border: 1.5px solid #ccc; border-radius: 4px; flex-shrink: 0; margin-top: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
+  .cb.checked { background: #2a7a4f; border-color: #2a7a4f; }
+  .cb.checked::after { content: ''; display: block; width: 5px; height: 9px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(40deg) translate(-1px, -1px); }
+  .item-body { flex: 1; }
+  .item-main { font-size: 15px; color: #1a1a1a; line-height: 1.4; transition: color 0.15s; }
+  .item-main.done { text-decoration: line-through; color: #bbb; }
+  .item-qty { font-weight: 600; }
+  .item-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
+  .item-recipe { font-size: 11px; color: #6a9fd8; margin-top: 1px; }
+  .delete-btn { font-size: 18px; color: #ddd; background: none; border: none; cursor: pointer; padding: 0 0 0 4px; line-height: 1; flex-shrink: 0; }
+  .delete-btn:active { color: #e55; }
+  .add-form { display: none; background: #fff; border-top: 0.5px solid #efefea; border-bottom: 0.5px solid #efefea; padding: 10px 1.25rem; gap: 6px; flex-direction: column; }
+  .add-form.open { display: flex; }
+  .add-form input, .add-form textarea { border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; width: 100%; }
+  .add-form-row { display: flex; gap: 6px; }
+  .add-form-row input { flex: 1; }
+  .add-form-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .btn-cancel { font-size: 13px; background: none; border: 1px solid #ddd; border-radius: 6px; padding: 6px 12px; cursor: pointer; color: #555; }
+  .btn-add { font-size: 13px; background: #2a7a4f; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+  .reset-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e0e0d8; padding: 0.75rem 1.25rem; display: flex; gap: 8px; }
+  .reset-all { flex: 1; font-size: 14px; background: none; border: 1px solid #ddd; border-radius: 8px; padding: 9px; cursor: pointer; color: #555; }
+  .notes-toggle { flex: 1; font-size: 14px; background: none; border: 1px solid #2a7a4f; border-radius: 8px; padding: 9px; cursor: pointer; color: #2a7a4f; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="title-block">
+      <div class="trip-title" id="tripTitle">Johnsville Trip</div>
+      <div class="trip-date" id="tripDate">June 10, 2026</div>
+    </div>
+    <button class="edit-btn" onclick="toggleMeta()">Edit title</button>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 of 0 items checked</div>
+  </div>
+</div>
+<div class="meta-edit" id="metaEdit">
+  <div class="meta-row">
+    <input type="text" id="titleInput" placeholder="Trip title" value="Johnsville Trip">
+    <input type="text" id="dateInput" placeholder="Date" value="June 10, 2026">
+  </div>
+  <button class="meta-save" onclick="saveMeta()">Save</button>
+</div>
+<div class="notes-area" id="notesArea">
+  <div class="notes-label">Notes</div>
+  <textarea class="notes-input" id="notesInput" placeholder="Add any notes here..."></textarea>
+</div>
+<div class="content" id="content"></div>
+<div class="reset-bar">
+  <button class="reset-all" onclick="resetAll()">Reset all</button>
+  <button class="notes-toggle" onclick="toggleNotes()">Notes</button>
+</div>
+<script>
+const defaultSections = [
+  { id: 'dairy', label: 'Dairy & Eggs', items: [
+    { qty: '8 large', name: 'Eggs', note: '4 burrito + 4 biscuit (doubled)', recipe: 'Burrito, Biscuit' },
+    { qty: '¼ cup', name: 'Heavy cream or whole milk', note: 'For soft scramble, doubled', recipe: 'Biscuit' },
+    { qty: '2 tbsp', name: 'Unsalted butter', note: 'For cooking eggs, doubled', recipe: 'Biscuit' },
+    { qty: '8 oz', name: 'Goat cheese or cream cheese', note: 'Softened, for herb crème, doubled', recipe: 'Biscuit' },
+    { qty: '2 tbsp', name: 'Mexican crema', note: 'Or sub sour cream', recipe: 'Street Corn' },
+  ]},
+  { id: 'cheese', label: 'Cheese', items: [
+    { qty: '1 block', name: 'Cotija cheese', note: '½ cup burrito (doubled) + ½ cup street corn', recipe: 'Burrito, Street Corn' },
+  ]},
+  { id: 'meat', label: 'Meat', items: [
+    { qty: '1 lb', name: 'Mexican chorizo', note: 'Bulk/ground, casings removed, doubled', recipe: 'Burrito' },
+    { qty: '8 slices', name: 'Applewood smoked bacon', note: 'Thick-cut preferred, doubled', recipe: 'Biscuit' },
+  ]},
+  { id: 'bread', label: 'Bread & Starch', items: [
+    { qty: '4 large', name: 'Buttermilk biscuits', note: 'Freshly baked or bakery-style, doubled', recipe: 'Biscuit' },
+    { qty: '4 large', name: 'Flour tortillas', note: 'Burrito size, fresh-pressed preferred, doubled', recipe: 'Burrito' },
+    { qty: '4 cups', name: 'Shredded hashbrown potatoes', note: 'Fresh or frozen, pat completely dry, doubled', recipe: 'Burrito' },
+  ]},
+  { id: 'produce', label: 'Produce', items: [
+    { qty: '2 ripe', name: 'Hass avocados', note: 'Doubled', recipe: 'Burrito' },
+    { qty: '4 small', name: 'Tomatillos', note: 'Husks removed, rinsed', recipe: 'Burrito' },
+    { qty: '1', name: 'Jalapeño or serrano', note: 'For salsa verde', recipe: 'Burrito' },
+    { qty: '1 small', name: 'Jalapeño', note: 'Seeded and minced', recipe: 'Street Corn' },
+    { qty: '1 head', name: 'Garlic', note: '3 cloves needed total', recipe: 'Burrito, Street Corn, Slaw' },
+    { qty: '2', name: 'Limes', note: '1 for burrito salsa, 1 for street corn', recipe: 'Burrito, Street Corn' },
+    { qty: '1', name: 'Lemon', note: 'Just a tsp of juice for arugula toss', recipe: 'Biscuit' },
+    { qty: '4 cups', name: 'Corn kernels', note: 'Fresh off cob or frozen/thawed, pat dry', recipe: 'Street Corn' },
+    { qty: '2 handfuls', name: 'Fresh baby arugula', note: 'Doubled', recipe: 'Biscuit' },
+    { qty: '1 bunch', name: 'Fresh cilantro', note: 'Covers burrito + street corn + slaw', recipe: 'Burrito, Street Corn, Slaw' },
+    { qty: '7', name: 'Green onions', note: '4 for street corn + 3 for slaw', recipe: 'Street Corn, Slaw' },
+    { qty: '2 cups', name: 'White cabbage', note: 'Finely shredded', recipe: 'Slaw' },
+    { qty: '2 cups', name: 'Red cabbage', note: 'Finely shredded', recipe: 'Slaw' },
+    { qty: '1 large', name: 'Carrot', note: 'Julienned', recipe: 'Slaw' },
+    { qty: '2 cups', name: 'Fresh bean sprouts', note: '', recipe: 'Slaw' },
+    { qty: '¼ cup', name: 'Cucumber', note: 'Finely sliced', recipe: 'Slaw' },
+    { qty: '1', name: 'Red chili', note: 'Optional, for slaw dressing', recipe: 'Slaw' },
+    { qty: '1 bunch', name: 'Fresh chives', note: '2 tbsp needed, doubled', recipe: 'Biscuit' },
+    { qty: '1 small bunch', name: 'Fresh dill', note: '2 tsp needed, doubled', recipe: 'Biscuit' },
+    { qty: '1 small bunch', name: 'Fresh tarragon', note: '2 tsp needed, doubled', recipe: 'Biscuit' },
+  ]},
+  { id: 'pantry', label: 'Pantry & Condiments', items: [
+    { qty: '1 tbsp', name: 'Avocado oil or lard', note: 'For frying hashbrowns', recipe: 'Burrito' },
+    { qty: '1 tbsp', name: 'Vegetable oil or butter', note: 'For charring corn', recipe: 'Street Corn' },
+    { qty: '⅓ cup', name: 'Mayonnaise', note: 'Street corn dressing', recipe: 'Street Corn' },
+    { qty: '½ tsp', name: 'Chili powder or Tajín', note: 'Street corn seasoning', recipe: 'Street Corn' },
+    { qty: '2 tbsp', name: 'Honey', note: 'Slaw dressing', recipe: 'Slaw' },
+    { qty: '2 tbsp', name: 'Rice vinegar', note: 'Slaw dressing', recipe: 'Slaw' },
+    { qty: '1 tbsp', name: 'Neutral oil (peanut or avocado)', note: 'Slaw dressing', recipe: 'Slaw' },
+    { qty: '1 tbsp', name: 'Sesame oil', note: 'Slaw dressing', recipe: 'Slaw' },
+    { qty: '3 tbsp', name: 'Salted peanuts', note: '2 tbsp slaw + 1 tbsp garnish', recipe: 'Slaw' },
+    { qty: '1 tbsp', name: 'Sesame seeds', note: 'Garnish', recipe: 'Slaw' },
+    { qty: '1 box', name: 'Maldon flaky sea salt', note: 'Finishing salt', recipe: 'Biscuit' },
+    { qty: '—', name: 'Salt and black pepper', note: 'Throughout', recipe: 'All' },
+  ]},
+  { id: 'other', label: 'Other', items: [] },
+];
+let sections = JSON.parse(JSON.stringify(defaultSections));
+let checked = {};
+function uid() { return '_' + Math.random().toString(36).substr(2, 9); }
+function saveState() {
+  localStorage.setItem('grocery_sections', JSON.stringify(sections));
+  localStorage.setItem('grocery_checked', JSON.stringify(checked));
+  localStorage.setItem('grocery_title', document.getElementById('tripTitle').textContent);
+  localStorage.setItem('grocery_date', document.getElementById('tripDate').textContent);
+  localStorage.setItem('grocery_notes', document.getElementById('notesInput').value);
+}
+function loadState() {
+  const s = localStorage.getItem('grocery_sections');
+  const c = localStorage.getItem('grocery_checked');
+  const t = localStorage.getItem('grocery_title');
+  const d = localStorage.getItem('grocery_date');
+  const n = localStorage.getItem('grocery_notes');
+  if (s) sections = JSON.parse(s);
+  if (c) checked = JSON.parse(c);
+  if (t) { document.getElementById('tripTitle').textContent = t; document.getElementById('titleInput').value = t; }
+  if (d) { document.getElementById('tripDate').textContent = d; document.getElementById('dateInput').value = d; }
+  if (n) document.getElementById('notesInput').value = n;
+}
+function render() {
+  const container = document.getElementById('content');
+  container.innerHTML = '';
+  sections.forEach(section => {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    const hdr = document.createElement('div');
+    hdr.className = 'section-header';
+    hdr.innerHTML = `<span class="section-label">${section.label}</span><button class="add-item-btn" onclick="toggleAddForm('${section.id}')">+ Add item</button>`;
+    sec.appendChild(hdr);
+    section.items.forEach((item, idx) => {
+      if (!item.id) item.id = uid();
+      const isChecked = !!checked[item.id];
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <div class="cb ${isChecked ? 'checked' : ''}" onclick="toggleCheck('${item.id}', this)"></div>
+        <div class="item-body">
+          <div class="item-main ${isChecked ? 'done' : ''}"><span class="item-qty">${item.qty}</span> ${item.name}</div>
+          ${item.note ? `<div class="item-meta">${item.note}</div>` : ''}
+          ${item.recipe ? `<div class="item-recipe">${item.recipe}</div>` : ''}
+        </div>
+        <button class="delete-btn" onclick="deleteItem('${section.id}', ${idx})">×</button>
+      `;
+      sec.appendChild(row);
+    });
+    const form = document.createElement('div');
+    form.className = 'add-form';
+    form.id = `form-${section.id}`;
+    form.innerHTML = `
+      <div class="add-form-row">
+        <input type="text" placeholder="Qty (e.g. 2 cups)" id="qty-${section.id}">
+        <input type="text" placeholder="Item name" id="name-${section.id}" style="flex:2">
+      </div>
+      <input type="text" placeholder="Note (optional)" id="note-${section.id}">
+      <input type="text" placeholder="Recipe(s) (optional)" id="recipe-${section.id}">
+      <div class="add-form-actions">
+        <button class="btn-cancel" onclick="toggleAddForm('${section.id}')">Cancel</button>
+        <button class="btn-add" onclick="addItem('${section.id}')">Add</button>
+      </div>
+    `;
+    sec.appendChild(form);
+    container.appendChild(sec);
+  });
+  updateProgress();
+}
+function toggleCheck(itemId, el) {
+  checked[itemId] = !checked[itemId];
+  el.classList.toggle('checked', checked[itemId]);
+  const main = el.parentElement.querySelector('.item-main');
+  if (main) main.classList.toggle('done', checked[itemId]);
+  saveState();
+  updateProgress();
+}
+function deleteItem(sectionId, idx) {
+  const section = sections.find(s => s.id === sectionId);
+  if (!section) return;
+  const item = section.items[idx];
+  if (item && item.id) delete checked[item.id];
+  section.items.splice(idx, 1);
+  saveState();
+  render();
+}
+function toggleAddForm(sectionId) {
+  const form = document.getElementById(`form-${sectionId}`);
+  form.classList.toggle('open');
+}
+function addItem(sectionId) {
+  const qty = document.getElementById(`qty-${sectionId}`).value.trim();
+  const name = document.getElementById(`name-${sectionId}`).value.trim();
+  const note = document.getElementById(`note-${sectionId}`).value.trim();
+  const recipe = document.getElementById(`recipe-${sectionId}`).value.trim();
+  if (!name) return;
+  const section = sections.find(s => s.id === sectionId);
+  if (!section) return;
+  section.items.push({ id: uid(), qty: qty || '—', name, note, recipe });
+  saveState();
+  render();
+}
+function resetAll() {
+  if (!confirm('Reset all checkboxes?')) return;
+  checked = {};
+  saveState();
+  render();
+}
+function toggleNotes() {
+  document.getElementById('notesArea').classList.toggle('open');
+}
+function toggleMeta() {
+  document.getElementById('metaEdit').classList.toggle('open');
+}
+function saveMeta() {
+  const t = document.getElementById('titleInput').value.trim();
+  const d = document.getElementById('dateInput').value.trim();
+  if (t) document.getElementById('tripTitle').textContent = t;
+  if (d) document.getElementById('tripDate').textContent = d;
+  document.getElementById('metaEdit').classList.remove('open');
+  saveState();
+}
+function updateProgress() {
+  let total = 0;
+  sections.forEach(s => total += s.items.length);
+  const done = Object.values(checked).filter(Boolean).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${done} of ${total} items checked`;
+}
+document.getElementById('notesInput').addEventListener('input', saveState);
+loadState();
+render();
+</script>
+</body>
+</html>
