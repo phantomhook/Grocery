@@ -70,20 +70,34 @@
   .add-item-btn { font-size: 12px; color: #2a7a4f; background: none; border: none; cursor: pointer; padding: 2px 0; font-weight: 500; }
 
   /* ── Items ── */
-  .item-row { display: flex; align-items: flex-start; gap: 12px; padding: 11px 1.25rem; background: #fff; border-bottom: 1px solid #f0efeb; }
+  .item-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 1.25rem; background: #fff; border-bottom: 1px solid #f0efeb; }
   .cb { width: 20px; height: 20px; border: 2px solid #d0cfc9; border-radius: 6px; flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
   .cb:active { transform: scale(0.9); }
   .cb.checked { background: #2a7a4f; border-color: #2a7a4f; }
   .cb.checked::after { content: ''; display: block; width: 5px; height: 9px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(40deg) translate(-1px, -1px); }
-  .item-body { flex: 1; }
-  .item-main { font-size: 15px; color: #1a1a1a; line-height: 1.4; transition: color 0.15s; }
-  .item-main.done { text-decoration: line-through; color: #c5c4bf; }
-  .item-qty { font-weight: 600; color: #2a7a4f; }
-  .item-main.done .item-qty { color: #c5c4bf; }
+  .item-qty-badge { min-width: 42px; padding: 3px 7px; background: #eef7f1; color: #2a7a4f; font-size: 11px; font-weight: 700; border-radius: 5px; text-align: center; flex-shrink: 0; margin-top: 1px; line-height: 1.3; }
+  .item-qty-badge.empty { background: #f5f4f0; color: #ccc; }
+  .item-row.done-row .item-qty-badge { background: #f5f4f0; color: #c5c4bf; }
+  .item-body { flex: 1; min-width: 0; }
+  .item-name { font-size: 15px; color: #1a1a1a; line-height: 1.4; transition: color 0.15s; }
+  .item-name.done { text-decoration: line-through; color: #c5c4bf; }
   .item-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
   .item-recipe { font-size: 11px; color: #7ab0e0; margin-top: 1px; font-weight: 500; }
-  .delete-btn { font-size: 18px; color: #ddd; background: none; border: none; cursor: pointer; padding: 0 0 0 4px; line-height: 1; flex-shrink: 0; }
-  .delete-btn:active { color: #e55; }
+  .item-actions { display: flex; gap: 2px; flex-shrink: 0; margin-top: -1px; }
+  .item-act { width: 28px; height: 28px; border-radius: 6px; border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #ccc; transition: all 0.12s; }
+  .item-act:active { background: #f0efeb; }
+  .item-act.edit-act:active { color: #2a7a4f; }
+  .item-act.del-act:active { color: #e55; }
+  .item-act svg { width: 14px; height: 14px; }
+
+  /* ── Inline edit ── */
+  .item-edit-row { background: #fafaf8; border-bottom: 1px solid #f0efeb; padding: 10px 1.25rem; display: none; gap: 6px; flex-direction: column; }
+  .item-edit-row.open { display: flex; }
+  .item-edit-row input { border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fff; width: 100%; }
+  .item-edit-row input:focus { outline: none; border-color: #2a7a4f; }
+  .edit-fields-row { display: flex; gap: 6px; }
+  .edit-fields-row input { flex: 1; }
+  .edit-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
   /* ── Add item form ── */
   .add-form { display: none; background: #fff; border-bottom: 1px solid #f0efeb; padding: 10px 1.25rem; gap: 6px; flex-direction: column; }
@@ -176,7 +190,8 @@
       </div>
     </div>
     <div class="quick-add">
-      <input type="text" id="quickName" placeholder="Add an item...">
+      <input type="text" id="quickQty" placeholder="Qty" style="flex:0 0 60px">
+      <input type="text" id="quickName" placeholder="Item name...">
       <div class="quick-add-section"><select id="quickSection"></select></div>
       <button class="quick-add-btn" onclick="quickAdd()">Add</button>
     </div>
@@ -378,17 +393,42 @@ function render() {
       if (!item.id) item.id = uid();
       const done = !!checked[item.id];
       const row = document.createElement('div');
-      row.className = 'item-row';
+      row.className = `item-row${done ? ' done-row' : ''}`;
       row.innerHTML = `
         <div class="cb ${done ? 'checked' : ''}" onclick="toggleCheck('${item.id}', this)"></div>
+        <div class="item-qty-badge ${item.qty ? '' : 'empty'}">${item.qty || '--'}</div>
         <div class="item-body">
-          <div class="item-main ${done ? 'done' : ''}">${item.qty ? `<span class="item-qty">${item.qty}</span> ` : ''}${item.name}</div>
+          <div class="item-name ${done ? 'done' : ''}">${item.name}</div>
           ${item.note ? `<div class="item-meta">${item.note}</div>` : ''}
           ${item.recipe ? `<div class="item-recipe">${item.recipe}</div>` : ''}
         </div>
-        <button class="delete-btn" onclick="deleteItem('${section.id}', ${idx})">&times;</button>
+        <div class="item-actions">
+          <button class="item-act edit-act" onclick="toggleEditItem('${section.id}', ${idx})" title="Edit">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z"/></svg>
+          </button>
+          <button class="item-act del-act" onclick="deleteItem('${section.id}', ${idx})" title="Delete">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h10M5.5 4V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1M6 7v5M10 7v5M4 4l.8 9a1 1 0 0 0 1 .9h4.4a1 1 0 0 0 1-.9L12 4"/></svg>
+          </button>
+        </div>
       `;
       sec.appendChild(row);
+      // Inline edit form
+      const editRow = document.createElement('div');
+      editRow.className = 'item-edit-row';
+      editRow.id = `edit-${section.id}-${idx}`;
+      editRow.innerHTML = `
+        <div class="edit-fields-row">
+          <input type="text" placeholder="Qty" id="eq-${section.id}-${idx}" value="${(item.qty || '').replace(/"/g, '&quot;')}">
+          <input type="text" placeholder="Item name" id="en-${section.id}-${idx}" value="${(item.name || '').replace(/"/g, '&quot;')}" style="flex:2">
+        </div>
+        <input type="text" placeholder="Note (optional)" id="eno-${section.id}-${idx}" value="${(item.note || '').replace(/"/g, '&quot;')}">
+        <input type="text" placeholder="Recipe or tag (optional)" id="er-${section.id}-${idx}" value="${(item.recipe || '').replace(/"/g, '&quot;')}">
+        <div class="edit-actions">
+          <button class="btn-cancel" onclick="toggleEditItem('${section.id}', ${idx})">Cancel</button>
+          <button class="btn-add" onclick="saveEditItem('${section.id}', ${idx})">Save</button>
+        </div>
+      `;
+      sec.appendChild(editRow);
     });
     const form = document.createElement('div');
     form.className = 'add-form';
@@ -439,14 +479,17 @@ function populateQuickSection() {
 
 function quickAdd() {
   if (!currentList) return;
-  const inp = document.getElementById('quickName');
-  const name = inp.value.trim();
+  const nameInp = document.getElementById('quickName');
+  const qtyInp = document.getElementById('quickQty');
+  const name = nameInp.value.trim();
   if (!name) return;
+  const qty = qtyInp.value.trim();
   const sectionId = document.getElementById('quickSection').value;
   const section = currentList.sections.find(s => s.id === sectionId);
   if (!section) return;
-  section.items.push({ id: uid(), qty: '', name, note: '', recipe: '' });
-  inp.value = '';
+  section.items.push({ id: uid(), qty, name, note: '', recipe: '' });
+  nameInp.value = '';
+  qtyInp.value = '';
   save();
   render();
 }
@@ -455,7 +498,9 @@ function toggleCheck(itemId, el) {
   if (!currentList) return;
   currentList.checked[itemId] = !currentList.checked[itemId];
   el.classList.toggle('checked', currentList.checked[itemId]);
-  const main = el.parentElement.querySelector('.item-main');
+  const row = el.closest('.item-row');
+  if (row) row.classList.toggle('done-row', currentList.checked[itemId]);
+  const main = el.parentElement.querySelector('.item-name');
   if (main) main.classList.toggle('done', currentList.checked[itemId]);
   save();
   updateProgress();
@@ -501,6 +546,29 @@ function addItem(sectionId) {
   render();
   const form = document.getElementById(`form-${sectionId}`);
   if (form) { form.classList.add('open'); form.querySelector('input[id^="name-"]').focus(); }
+}
+
+function toggleEditItem(sectionId, idx) {
+  const el = document.getElementById(`edit-${sectionId}-${idx}`);
+  if (!el) return;
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) {
+    el.querySelector(`#en-${sectionId}-${idx}`).focus();
+  }
+}
+
+function saveEditItem(sectionId, idx) {
+  if (!currentList) return;
+  const section = currentList.sections.find(s => s.id === sectionId);
+  if (!section || !section.items[idx]) return;
+  const name = document.getElementById(`en-${sectionId}-${idx}`).value.trim();
+  if (!name) return;
+  section.items[idx].qty = document.getElementById(`eq-${sectionId}-${idx}`).value.trim();
+  section.items[idx].name = name;
+  section.items[idx].note = document.getElementById(`eno-${sectionId}-${idx}`).value.trim();
+  section.items[idx].recipe = document.getElementById(`er-${sectionId}-${idx}`).value.trim();
+  save();
+  render();
 }
 
 function showAddSection() {
@@ -687,6 +755,7 @@ document.getElementById('notesInput').addEventListener('input', () => {
 });
 
 // ── Enter key on quick add & new list ──
+document.getElementById('quickQty').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('quickName').focus(); });
 document.getElementById('quickName').addEventListener('keydown', e => { if (e.key === 'Enter') quickAdd(); });
 document.getElementById('newTitle').addEventListener('keydown', e => { if (e.key === 'Enter') { document.getElementById('newDate').focus(); } });
 document.getElementById('newDate').addEventListener('keydown', e => { if (e.key === 'Enter') createList(); });
