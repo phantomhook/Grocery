@@ -146,6 +146,24 @@
   .new-list-go { width: 100%; background: #2a7a4f; color: #fff; border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
   .new-list-go:active { background: #1d5e3a; }
 
+  /* ── Paste import ── */
+  .paste-panel { background: #fff; border-bottom: 1px solid #e8e7e3; padding: 1rem 1.25rem; display: none; }
+  .paste-panel.open { display: block; }
+  .paste-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .paste-title { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+  .paste-hint { font-size: 12px; color: #999; margin-bottom: 10px; line-height: 1.4; }
+  .paste-textarea { width: 100%; border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; resize: vertical; min-height: 120px; line-height: 1.6; }
+  .paste-textarea:focus { outline: none; border-color: #2a7a4f; }
+  .paste-textarea::placeholder { color: #ccc; }
+  .paste-options { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .paste-options label { font-size: 12px; color: #888; font-weight: 500; }
+  .paste-options select { appearance: none; -webkit-appearance: none; border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 7px 28px 7px 10px; font-size: 13px; font-family: inherit; color: #1a1a1a; background: #fafaf8 url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; flex: 1; }
+  .paste-options select:focus { outline: none; border-color: #2a7a4f; }
+  .paste-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .paste-actions .btn-add { flex: 1; padding: 10px; font-size: 14px; }
+  .paste-actions .btn-cancel { flex: 0; padding: 10px 16px; font-size: 14px; }
+  .paste-preview { margin-top: 10px; font-size: 12px; color: #2a7a4f; font-weight: 500; }
+
   /* ── Bottom bar ── */
   .bottom-bar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e8e7e3; padding: 0.65rem 1.25rem; display: flex; gap: 8px; z-index: 15; }
   .bar-btn { flex: 1; font-size: 13px; font-weight: 500; background: none; border: 1.5px solid #e0dfdb; border-radius: 10px; padding: 10px; cursor: pointer; color: #777; transition: all 0.15s; }
@@ -239,11 +257,29 @@
     </div>
   </div>
 
+  <div class="paste-panel" id="pastePanel">
+    <div class="paste-header">
+      <span class="paste-title">Paste a list</span>
+    </div>
+    <div class="paste-hint">One item per line. Quantities at the start are detected automatically.<br>e.g. "2 lbs chicken thighs" or "eggs" or "1/2 cup heavy cream"</div>
+    <textarea class="paste-textarea" id="pasteInput" placeholder="2 lbs chicken thighs&#10;1 dozen eggs&#10;whole milk&#10;3 avocados&#10;fresh cilantro"></textarea>
+    <div class="paste-options">
+      <label>Add to:</label>
+      <select id="pasteSection"></select>
+    </div>
+    <div class="paste-preview" id="pastePreview"></div>
+    <div class="paste-actions">
+      <button class="btn-cancel" onclick="togglePaste()">Cancel</button>
+      <button class="btn-add" onclick="importPaste()">Import items</button>
+    </div>
+  </div>
+
   <div class="content" id="content"></div>
 
   <div class="bottom-bar" id="bottomBar" style="display:none">
     <button class="bar-btn" onclick="resetAll()">Uncheck</button>
-    <button class="bar-btn accent" onclick="toggleNotes()">Notes</button>
+    <button class="bar-btn accent" onclick="togglePaste()">Paste list</button>
+    <button class="bar-btn" onclick="toggleNotes()">Notes</button>
     <button class="bar-btn danger" onclick="archiveAndNew()">New list</button>
   </div>
 </div>
@@ -629,6 +665,102 @@ function resetAll() {
   render();
 }
 
+// ── Paste import ──
+function togglePaste() {
+  const panel = document.getElementById('pastePanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    populatePasteSection();
+    document.getElementById('pasteInput').value = '';
+    document.getElementById('pastePreview').textContent = '';
+    document.getElementById('pasteInput').focus();
+  }
+}
+
+function populatePasteSection() {
+  if (!currentList) return;
+  const sel = document.getElementById('pasteSection');
+  sel.innerHTML = '';
+  currentList.sections.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.label;
+    sel.appendChild(opt);
+  });
+}
+
+function parseLine(line) {
+  line = line.trim();
+  if (!line) return null;
+  // Strip leading bullets, dashes, numbers with dots/parens, checkboxes
+  line = line.replace(/^[\s]*[-–—•*▪▸►]\s*/, '');
+  line = line.replace(/^[\s]*\d+[.)]\s*/, '');
+  line = line.replace(/^[\s]*[\[\(][x\s✓✗]?[\]\)]\s*/i, '');
+  line = line.trim();
+  if (!line) return null;
+
+  // Try to extract qty from the start
+  // Patterns: "2 lbs", "1/2 cup", "½ cup", "12", "1.5 oz", "2-3", "1 dozen"
+  const qtyPattern = /^(\d+[\/.]\d+|\d+[-–]\d+|\d+\.?\d*)\s*(lbs?|oz|cups?|tbsp|tsp|gal|gallons?|liters?|ml|kg|g|bunch|bunches|head|heads|dozen|doz|cans?|bags?|boxes?|bottles?|jars?|packs?|pkgs?|pieces?|pcs?|stalks?|cloves?|slices?|sticks?|loaves?|loaf|large|small|medium|med|whole|handfuls?|sprigs?)?\s*/i;
+  const fracPattern = /^([½¼¾⅓⅔⅛⅜⅝⅞])\s*(lbs?|oz|cups?|tbsp|tsp|gal|gallons?|liters?|ml|kg|g|bunch|bunches|head|heads|dozen|doz|cans?|bags?|boxes?|bottles?|jars?|packs?|pkgs?|pieces?|pcs?|stalks?|cloves?|slices?|sticks?|loaves?|loaf|large|small|medium|med|whole|handfuls?|sprigs?)?\s*/i;
+
+  let qty = '';
+  let name = line;
+
+  const fracMatch = line.match(fracPattern);
+  const qtyMatch = line.match(qtyPattern);
+
+  if (fracMatch && fracMatch[0].length > 0) {
+    qty = fracMatch[0].trim();
+    name = line.slice(fracMatch[0].length).trim();
+  } else if (qtyMatch && qtyMatch[0].length > 0) {
+    qty = qtyMatch[0].trim();
+    name = line.slice(qtyMatch[0].length).trim();
+  }
+
+  // Clean up name: remove trailing commas, parenthetical notes
+  let note = '';
+  const parenMatch = name.match(/\(([^)]+)\)\s*$/);
+  if (parenMatch) {
+    note = parenMatch[1].trim();
+    name = name.slice(0, parenMatch.index).trim();
+  }
+  // Check for " - note" or " -- note" at end
+  const dashNote = name.match(/\s+[-–—]+\s+(.+)$/);
+  if (dashNote) {
+    note = dashNote[1].trim();
+    name = name.slice(0, dashNote.index).trim();
+  }
+
+  name = name.replace(/,\s*$/, '').trim();
+  if (!name) return null;
+
+  return { id: uid(), qty, name, note, recipe: '' };
+}
+
+function importPaste() {
+  if (!currentList) return;
+  const text = document.getElementById('pasteInput').value;
+  const sectionId = document.getElementById('pasteSection').value;
+  const section = currentList.sections.find(s => s.id === sectionId);
+  if (!section) return;
+
+  const lines = text.split('\n');
+  let count = 0;
+  lines.forEach(line => {
+    const item = parseLine(line);
+    if (item) {
+      section.items.push(item);
+      count++;
+    }
+  });
+
+  if (count === 0) return;
+  document.getElementById('pastePanel').classList.remove('open');
+  save();
+  render();
+}
+
 function toggleNotes() {
   document.getElementById('notesArea').classList.toggle('open');
 }
@@ -770,6 +902,19 @@ function deleteHistory(idx) {
 // ── Save notes on input ──
 document.getElementById('notesInput').addEventListener('input', () => {
   if (currentList) { currentList.notes = document.getElementById('notesInput').value; save(); }
+});
+
+// ── Live preview for paste ──
+document.getElementById('pasteInput').addEventListener('input', () => {
+  const text = document.getElementById('pasteInput').value;
+  const lines = text.split('\n').filter(l => l.trim());
+  const parsed = lines.map(parseLine).filter(Boolean);
+  const el = document.getElementById('pastePreview');
+  if (parsed.length > 0) {
+    el.textContent = `${parsed.length} item${parsed.length > 1 ? 's' : ''} detected`;
+  } else {
+    el.textContent = '';
+  }
 });
 
 // ── Enter key on quick add & new list ──
