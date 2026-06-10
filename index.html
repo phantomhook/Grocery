@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grocery Checklist</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; font-size: 16px; }
+  .header { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 1rem 1.25rem; position: sticky; top: 0; z-index: 10; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .title-block { flex: 1; }
+  .trip-title { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+  .trip-date { font-size: 13px; color: #888; margin-top: 2px; }
+  .progress-wrap { margin-top: 10px; }
+  .progress-bar { height: 4px; background: #e0e0d8; border-radius: 2px; }
+  .progress-fill { height: 4px; background: #2a7a4f; border-radius: 2px; transition: width 0.3s ease; width: 0%; }
+  .progress-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .header-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .edit-btn { font-size: 12px; color: #555; background: none; border: 1px solid #ddd; border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+  .edit-btn:active { background: #f0f0eb; }
+  .notes-area { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 0.75rem 1.25rem; display: none; }
+  .notes-area.open { display: block; }
+  .notes-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .notes-input { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; resize: vertical; min-height: 70px; }
+  .meta-edit { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 0.75rem 1.25rem; display: none; }
+  .meta-edit.open { display: block; }
+  .meta-row { display: flex; gap: 10px; margin-bottom: 8px; }
+  .meta-row input { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; }
+  .meta-save { font-size: 13px; background: #2a7a4f; color: #fff; border: none; border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+  .content { padding: 0.5rem 0 4rem; }
+  .section { margin-bottom: 0.5rem; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1.25rem 0.4rem; background: #f5f5f0; }
+  .section-left { display: flex; align-items: center; gap: 8px; }
+  .section-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  .section-remove { font-size: 14px; color: #ccc; background: none; border: none; cursor: pointer; padding: 0; line-height: 1; }
+  .section-remove:active { color: #e55; }
+  .add-item-btn { font-size: 12px; color: #2a7a4f; background: none; border: none; cursor: pointer; padding: 2px 0; }
+  .item-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 1.25rem; background: #fff; border-bottom: 0.5px solid #efefea; }
+  .item-row:first-of-type { border-top: 0.5px solid #efefea; }
+  .cb { width: 18px; height: 18px; border: 1.5px solid #ccc; border-radius: 4px; flex-shrink: 0; margin-top: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
+  .cb.checked { background: #2a7a4f; border-color: #2a7a4f; }
+  .cb.checked::after { content: ''; display: block; width: 5px; height: 9px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(40deg) translate(-1px, -1px); }
+  .item-body { flex: 1; }
+  .item-main { font-size: 15px; color: #1a1a1a; line-height: 1.4; transition: color 0.15s; }
+  .item-main.done { text-decoration: line-through; color: #bbb; }
+  .item-qty { font-weight: 600; }
+  .item-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
+  .item-recipe { font-size: 11px; color: #6a9fd8; margin-top: 1px; }
+  .delete-btn { font-size: 18px; color: #ddd; background: none; border: none; cursor: pointer; padding: 0 0 0 4px; line-height: 1; flex-shrink: 0; }
+  .delete-btn:active { color: #e55; }
+  .add-form { display: none; background: #fff; border-top: 0.5px solid #efefea; border-bottom: 0.5px solid #efefea; padding: 10px 1.25rem; gap: 6px; flex-direction: column; }
+  .add-form.open { display: flex; }
+  .add-form input, .add-form textarea { border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; width: 100%; }
+  .add-form-row { display: flex; gap: 6px; }
+  .add-form-row input { flex: 1; }
+  .add-form-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .btn-cancel { font-size: 13px; background: none; border: 1px solid #ddd; border-radius: 6px; padding: 6px 12px; cursor: pointer; color: #555; }
+  .btn-add { font-size: 13px; background: #2a7a4f; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+  .add-section-bar { padding: 10px 1.25rem; }
+  .add-section-bar.collapsed .add-section-form { display: none; }
+  .add-section-btn { font-size: 13px; color: #2a7a4f; background: none; border: 1px dashed #c5c5bc; border-radius: 8px; padding: 10px; width: 100%; cursor: pointer; }
+  .add-section-btn:active { background: #f0f0eb; }
+  .add-section-form { display: flex; gap: 6px; }
+  .add-section-form input { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; }
+  .add-section-form .btn-add { flex-shrink: 0; }
+  .add-section-form .btn-cancel { flex-shrink: 0; }
+  .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e0e0d8; padding: 0.75rem 1.25rem; display: flex; gap: 8px; }
+  .bar-btn { flex: 1; font-size: 14px; background: none; border: 1px solid #ddd; border-radius: 8px; padding: 9px; cursor: pointer; color: #555; }
+  .bar-btn:active { background: #f0f0eb; }
+  .bar-btn.accent { border-color: #2a7a4f; color: #2a7a4f; }
+  .bar-btn.danger { border-color: #d44; color: #d44; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="title-block">
+      <div class="trip-title" id="tripTitle">Grocery List</div>
+      <div class="trip-date" id="tripDate"></div>
+    </div>
+    <div class="header-actions">
+      <button class="edit-btn" onclick="toggleMeta()">Edit</button>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 of 0 items checked</div>
+  </div>
+</div>
+<div class="meta-edit" id="metaEdit">
+  <div class="meta-row">
+    <input type="text" id="titleInput" placeholder="List name (e.g. Beach Weekend)">
+    <input type="text" id="dateInput" placeholder="Date (e.g. June 15, 2026)">
+  </div>
+  <button class="meta-save" onclick="saveMeta()">Save</button>
+</div>
+<div class="notes-area" id="notesArea">
+  <div class="notes-label">Notes</div>
+  <textarea class="notes-input" id="notesInput" placeholder="Add any notes here..."></textarea>
+</div>
+<div class="content" id="content"></div>
+<div class="bottom-bar">
+  <button class="bar-btn" onclick="resetAll()">Reset</button>
+  <button class="bar-btn accent" onclick="toggleNotes()">Notes</button>
+  <button class="bar-btn danger" onclick="newList()">New list</button>
+</div>
+<script>
+const defaultSections = [
+  { id: 'produce', label: 'Produce', items: [] },
+  { id: 'dairy', label: 'Dairy & Eggs', items: [] },
+  { id: 'meat', label: 'Meat & Seafood', items: [] },
+  { id: 'bread', label: 'Bread & Bakery', items: [] },
+  { id: 'pantry', label: 'Pantry & Dry Goods', items: [] },
+  { id: 'frozen', label: 'Frozen', items: [] },
+  { id: 'beverages', label: 'Beverages', items: [] },
+  { id: 'other', label: 'Other', items: [] },
+];
+let sections = JSON.parse(JSON.stringify(defaultSections));
+let checked = {};
+function uid() { return '_' + Math.random().toString(36).substr(2, 9); }
+function saveState() {
+  localStorage.setItem('grocery_sections', JSON.stringify(sections));
+  localStorage.setItem('grocery_checked', JSON.stringify(checked));
+  localStorage.setItem('grocery_title', document.getElementById('tripTitle').textContent);
+  localStorage.setItem('grocery_date', document.getElementById('tripDate').textContent);
+  localStorage.setItem('grocery_notes', document.getElementById('notesInput').value);
+}
+function loadState() {
+  const s = localStorage.getItem('grocery_sections');
+  const c = localStorage.getItem('grocery_checked');
+  const t = localStorage.getItem('grocery_title');
+  const d = localStorage.getItem('grocery_date');
+  const n = localStorage.getItem('grocery_notes');
+  if (s) sections = JSON.parse(s);
+  if (c) checked = JSON.parse(c);
+  if (t) { document.getElementById('tripTitle').textContent = t; document.getElementById('titleInput').value = t; }
+  if (d) { document.getElementById('tripDate').textContent = d; document.getElementById('dateInput').value = d; }
+  if (n) document.getElementById('notesInput').value = n;
+}
+function render() {
+  const container = document.getElementById('content');
+  container.innerHTML = '';
+  sections.forEach(section => {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    const hdr = document.createElement('div');
+    hdr.className = 'section-header';
+    hdr.innerHTML = `
+      <div class="section-left">
+        <span class="section-label">${section.label}</span>
+        <button class="section-remove" onclick="removeSection('${section.id}')" title="Remove section">&times;</button>
+      </div>
+      <button class="add-item-btn" onclick="toggleAddForm('${section.id}')">+ Add item</button>`;
+    sec.appendChild(hdr);
+    section.items.forEach((item, idx) => {
+      if (!item.id) item.id = uid();
+      const isChecked = !!checked[item.id];
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <div class="cb ${isChecked ? 'checked' : ''}" onclick="toggleCheck('${item.id}', this)"></div>
+        <div class="item-body">
+          <div class="item-main ${isChecked ? 'done' : ''}">${item.qty ? `<span class="item-qty">${item.qty}</span> ` : ''}${item.name}</div>
+          ${item.note ? `<div class="item-meta">${item.note}</div>` : ''}
+          ${item.recipe ? `<div class="item-recipe">${item.recipe}</div>` : ''}
+        </div>
+        <button class="delete-btn" onclick="deleteItem('${section.id}', ${idx})">&times;</button>
+      `;
+      sec.appendChild(row);
+    });
+    const form = document.createElement('div');
+    form.className = 'add-form';
+    form.id = `form-${section.id}`;
+    form.innerHTML = `
+      <div class="add-form-row">
+        <input type="text" placeholder="Qty (optional)" id="qty-${section.id}">
+        <input type="text" placeholder="Item name" id="name-${section.id}" style="flex:2">
+      </div>
+      <input type="text" placeholder="Note (optional)" id="note-${section.id}">
+      <input type="text" placeholder="Recipe or tag (optional)" id="recipe-${section.id}">
+      <div class="add-form-actions">
+        <button class="btn-cancel" onclick="toggleAddForm('${section.id}')">Cancel</button>
+        <button class="btn-add" onclick="addItem('${section.id}')">Add</button>
+      </div>
+    `;
+    sec.appendChild(form);
+    container.appendChild(sec);
+  });
+  // Add section bar
+  const addBar = document.createElement('div');
+  addBar.className = 'add-section-bar collapsed';
+  addBar.id = 'addSectionBar';
+  addBar.innerHTML = `
+    <button class="add-section-btn" onclick="showAddSection()">+ Add section</button>
+    <div class="add-section-form">
+      <input type="text" id="newSectionName" placeholder="Section name (e.g. Snacks)">
+      <button class="btn-add" onclick="addSection()">Add</button>
+      <button class="btn-cancel" onclick="hideAddSection()">Cancel</button>
+    </div>
+  `;
+  container.appendChild(addBar);
+  updateProgress();
+}
+function showAddSection() {
+  const bar = document.getElementById('addSectionBar');
+  bar.classList.remove('collapsed');
+  bar.querySelector('.add-section-btn').style.display = 'none';
+  document.getElementById('newSectionName').focus();
+}
+function hideAddSection() {
+  const bar = document.getElementById('addSectionBar');
+  bar.classList.add('collapsed');
+  bar.querySelector('.add-section-btn').style.display = '';
+  document.getElementById('newSectionName').value = '';
+}
+function addSection() {
+  const name = document.getElementById('newSectionName').value.trim();
+  if (!name) return;
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + uid();
+  sections.push({ id, label: name, items: [] });
+  saveState();
+  render();
+}
+function removeSection(sectionId) {
+  const section = sections.find(s => s.id === sectionId);
+  if (!section) return;
+  const label = section.label;
+  const count = section.items.length;
+  const msg = count > 0
+    ? `Remove "${label}" and its ${count} item${count > 1 ? 's' : ''}?`
+    : `Remove empty section "${label}"?`;
+  if (!confirm(msg)) return;
+  section.items.forEach(item => { if (item.id) delete checked[item.id]; });
+  sections = sections.filter(s => s.id !== sectionId);
+  saveState();
+  render();
+}
+function toggleCheck(itemId, el) {
+  checked[itemId] = !checked[itemId];
+  el.classList.toggle('checked', checked[itemId]);
+  const main = el.parentElement.querySelector('.item-main');
+  if (main) main.classList.toggle('done', checked[itemId]);
+  saveState();
+  updateProgress();
+}
+function deleteItem(sectionId, idx) {
+  const section = sections.find(s => s.id === sectionId);
+  if (!section) return;
+  const item = section.items[idx];
+  if (item && item.id) delete checked[item.id];
+  section.items.splice(idx, 1);
+  saveState();
+  render();
+}
+function toggleAddForm(sectionId) {
+  const form = document.getElementById(`form-${sectionId}`);
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) {
+    form.querySelector('input[id^="name-"]').focus();
+  }
+}
+function addItem(sectionId) {
+  const qty = document.getElementById(`qty-${sectionId}`).value.trim();
+  const name = document.getElementById(`name-${sectionId}`).value.trim();
+  const note = document.getElementById(`note-${sectionId}`).value.trim();
+  const recipe = document.getElementById(`recipe-${sectionId}`).value.trim();
+  if (!name) return;
+  const section = sections.find(s => s.id === sectionId);
+  if (!section) return;
+  section.items.push({ id: uid(), qty: qty || '', name, note, recipe });
+  saveState();
+  render();
+  // Re-open the form for quick multi-add
+  const form = document.getElementById(`form-${sectionId}`);
+  if (form) {
+    form.classList.add('open');
+    form.querySelector('input[id^="name-"]').focus();
+  }
+}
+function resetAll() {
+  if (!confirm('Reset all checkboxes?')) return;
+  checked = {};
+  saveState();
+  render();
+}
+function newList() {
+  if (!confirm('Start a brand new list? This will clear everything.')) return;
+  sections = JSON.parse(JSON.stringify(defaultSections));
+  checked = {};
+  document.getElementById('tripTitle').textContent = 'Grocery List';
+  document.getElementById('tripDate').textContent = '';
+  document.getElementById('titleInput').value = '';
+  document.getElementById('dateInput').value = '';
+  document.getElementById('notesInput').value = '';
+  document.getElementById('notesArea').classList.remove('open');
+  document.getElementById('metaEdit').classList.remove('open');
+  saveState();
+  render();
+}
+function toggleNotes() {
+  document.getElementById('notesArea').classList.toggle('open');
+}
+function toggleMeta() {
+  document.getElementById('metaEdit').classList.toggle('open');
+}
+function saveMeta() {
+  const t = document.getElementById('titleInput').value.trim();
+  const d = document.getElementById('dateInput').value.trim();
+  document.getElementById('tripTitle').textContent = t || 'Grocery List';
+  document.getElementById('tripDate').textContent = d;
+  document.getElementById('metaEdit').classList.remove('open');
+  saveState();
+}
+function updateProgress() {
+  let total = 0;
+  sections.forEach(s => total += s.items.length);
+  const done = Object.values(checked).filter(Boolean).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = total > 0
+    ? `${done} of ${total} items checked`
+    : 'No items yet';
+}
+document.getElementById('notesInput').addEventListener('input', saveState);
+loadState();
+render();
+</script>
+</body>
+</html>
