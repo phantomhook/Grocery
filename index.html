@@ -70,21 +70,23 @@
   .add-item-btn { font-size: 12px; color: #2a7a4f; background: none; border: none; cursor: pointer; padding: 2px 0; font-weight: 500; }
 
   /* ── Items ── */
-  .item-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 1.25rem; background: #fff; border-bottom: 1px solid #f0efeb; }
-  .cb { width: 20px; height: 20px; border: 2px solid #d0cfc9; border-radius: 6px; flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .item-row { display: flex; align-items: center; gap: 0; padding: 0; background: #fff; border-bottom: 1px solid #f0efeb; }
+  .item-check { display: flex; align-items: center; justify-content: center; width: 44px; flex-shrink: 0; align-self: stretch; }
+  .cb { width: 20px; height: 20px; border: 2px solid #d0cfc9; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
   .cb:active { transform: scale(0.9); }
   .cb.checked { background: #2a7a4f; border-color: #2a7a4f; }
   .cb.checked::after { content: ''; display: block; width: 5px; height: 9px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(40deg) translate(-1px, -1px); }
-  .item-qty-badge { min-width: 42px; padding: 3px 7px; background: #eef7f1; color: #2a7a4f; font-size: 11px; font-weight: 700; border-radius: 5px; text-align: center; flex-shrink: 0; margin-top: 1px; line-height: 1.3; }
-  .item-qty-badge.empty { background: #f5f4f0; color: #ccc; }
-  .item-row.done-row .item-qty-badge { background: #f5f4f0; color: #c5c4bf; }
-  .item-body { flex: 1; min-width: 0; }
-  .item-name { font-size: 15px; color: #1a1a1a; line-height: 1.4; transition: color 0.15s; }
+  .item-qty-col { width: 72px; flex-shrink: 0; padding: 10px 0; text-align: center; align-self: stretch; display: flex; align-items: center; justify-content: center; border-right: 1px solid #f0efeb; }
+  .item-qty-text { font-size: 14px; font-weight: 700; color: #1a1a1a; line-height: 1.2; }
+  .item-qty-text.empty { color: #ddd; font-weight: 400; }
+  .item-row.done-row .item-qty-text { color: #c5c4bf; }
+  .item-body { flex: 1; min-width: 0; padding: 10px 12px; }
+  .item-name { font-size: 15px; color: #1a1a1a; line-height: 1.3; transition: color 0.15s; }
   .item-name.done { text-decoration: line-through; color: #c5c4bf; }
-  .item-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
+  .item-meta { font-size: 12px; color: #999; margin-top: 2px; }
   .item-recipe { font-size: 11px; color: #7ab0e0; margin-top: 1px; font-weight: 500; }
-  .item-actions { display: flex; gap: 2px; flex-shrink: 0; margin-top: -1px; }
-  .item-act { width: 28px; height: 28px; border-radius: 6px; border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #ccc; transition: all 0.12s; }
+  .item-actions { display: flex; flex-shrink: 0; align-self: stretch; }
+  .item-act { width: 36px; border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #ccc; transition: all 0.12s; border-left: 1px solid #f0efeb; }
   .item-act:active { background: #f0efeb; }
   .item-act.edit-act:active { color: #2a7a4f; }
   .item-act.del-act:active { color: #e55; }
@@ -395,8 +397,12 @@ function render() {
       const row = document.createElement('div');
       row.className = `item-row${done ? ' done-row' : ''}`;
       row.innerHTML = `
-        <div class="cb ${done ? 'checked' : ''}" onclick="toggleCheck('${item.id}', this)"></div>
-        <div class="item-qty-badge ${item.qty ? '' : 'empty'}">${item.qty || '--'}</div>
+        <div class="item-check">
+          <div class="cb ${done ? 'checked' : ''}" onclick="toggleCheck('${item.id}', this)"></div>
+        </div>
+        <div class="item-qty-col">
+          <span class="item-qty-text ${item.qty ? '' : 'empty'}">${item.qty || '--'}</span>
+        </div>
         <div class="item-body">
           <div class="item-name ${done ? 'done' : ''}">${item.name}</div>
           ${item.note ? `<div class="item-meta">${item.note}</div>` : ''}
@@ -499,9 +505,11 @@ function toggleCheck(itemId, el) {
   currentList.checked[itemId] = !currentList.checked[itemId];
   el.classList.toggle('checked', currentList.checked[itemId]);
   const row = el.closest('.item-row');
-  if (row) row.classList.toggle('done-row', currentList.checked[itemId]);
-  const main = el.parentElement.querySelector('.item-name');
-  if (main) main.classList.toggle('done', currentList.checked[itemId]);
+  if (row) {
+    row.classList.toggle('done-row', currentList.checked[itemId]);
+    const main = row.querySelector('.item-name');
+    if (main) main.classList.toggle('done', currentList.checked[itemId]);
+  }
   save();
   updateProgress();
   const sectionEl = el.closest('.section');
