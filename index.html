@@ -70,6 +70,9 @@
   .notes-img-wrap img { display: block; max-width: 160px; max-height: 120px; object-fit: cover; cursor: pointer; }
   .notes-img-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff; border: none; font-size: 14px; line-height: 22px; text-align: center; cursor: pointer; display: none; }
   .notes-img-wrap:hover .notes-img-del { display: block; }
+  .img-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .img-overlay img { max-width: 92vw; max-height: 90vh; object-fit: contain; border-radius: 8px; }
+  .img-overlay-close { position: absolute; top: 16px; right: 20px; color: #fff; font-size: 32px; background: none; border: none; cursor: pointer; line-height: 1; }
 
   /* ── Content ── */
   .content { padding: 0.25rem 0 1rem; background: #f7f6f3; }
@@ -1324,10 +1327,19 @@ function renderNoteImages() {
   }
   container.innerHTML = currentList.images.map((src, idx) => `
     <div class="notes-img-wrap">
-      <img src="${src}" onclick="window.open(this.src, '_blank')" title="Click to view full size">
+      <img src="${src}" onclick="viewImage(${idx})" title="Click to view full size">
       <button class="notes-img-del" onclick="deleteNoteImage(${idx})">&times;</button>
     </div>
   `).join('');
+}
+
+function viewImage(idx) {
+  if (!currentList || !currentList.images || !currentList.images[idx]) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'img-overlay';
+  overlay.innerHTML = `<button class="img-overlay-close">&times;</button><img src="${currentList.images[idx]}">`;
+  overlay.addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
 }
 
 function deleteNoteImage(idx) {
