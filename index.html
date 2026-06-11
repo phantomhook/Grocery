@@ -768,17 +768,23 @@ function togglePaste() {
 
 
 // Units for qty detection
-const UNITS = 'lbs?|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|gal|gallons?|liters?|ml|kg|g|grams?|bunch|bunches|head|heads|dozen|doz|cans?|bags?|boxes?|bottles?|jars?|packs?|pkgs?|packages?|pieces?|pcs?|stalks?|cloves?|slices?|sticks?|loaves?|loaf|large|small|medium|med|whole|handfuls?|sprigs?|ribs?|ears?|links?|fillets?|breasts?|thighs?|legs?|quarts?|qt|pints?|pt|pinch|pinches|dashes?|drops?';
+const UNITS = 'lbs?|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|gal|gallons?|liters?|ml|kg|g|grams?|bunch|bunches|head|heads|dozen|doz|cans?|bags?|boxes?|box|blocks?|bottles?|jars?|packs?|pkgs?|packages?|pieces?|pcs?|stalks?|cloves?|slices?|sticks?|loaves?|loaf|large|small|medium|med|whole|handfuls?|sprigs?|ribs?|ears?|links?|fillets?|breasts?|thighs?|legs?|quarts?|qt|pints?|pt|pinch|pinches|dashes?|drops?|ripe';
+
+// Known grocery section names for header detection
+const SECTION_NAMES = ['produce','dairy','dairy & eggs','meat','meat & seafood','seafood','bakery','bakery & bread','bread','bread & starch','pantry','pantry & condiments','condiments','condiments & sauces','spices','spices & seasonings','frozen','beverages','snacks','deli','household','other','cheese'];
 
 function isHeaderLine(line) {
   let trimmed = line.trim();
   // Strip markdown bold/italic
   trimmed = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/__([^_]+)__/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/_([^_]+)_/g, '$1');
-  // "For the slaw:", "SLAW:", "Asian Dressing:", "## Produce", "Slaw Ingredients"
+  // "## Produce", "### Dairy & Eggs"
   if (/^#+\s+/.test(trimmed)) return trimmed.replace(/^#+\s+/, '').replace(/:?\s*$/, '').trim();
+  // "Dairy & Eggs:", "Slaw Ingredients:"
   if (/:\s*$/.test(trimmed) && trimmed.length < 60 && !/\d/.test(trimmed.charAt(0))) return trimmed.replace(/:?\s*$/, '').trim();
-  // ALL CAPS short lines (less than 40 chars, at least 3 chars, no digits at start)
+  // ALL CAPS short lines
   if (trimmed.length >= 3 && trimmed.length < 40 && trimmed === trimmed.toUpperCase() && /^[A-Z]/.test(trimmed) && !/^\d/.test(trimmed)) return trimmed.replace(/:?\s*$/, '').trim();
+  // Match known grocery section names (case-insensitive)
+  if (SECTION_NAMES.includes(trimmed.toLowerCase().replace(/:?\s*$/, '').trim())) return trimmed.replace(/:?\s*$/, '').trim();
   return null;
 }
 
@@ -799,7 +805,12 @@ function parseLine(line) {
 
   // Build qty regex dynamically with all units
   const unitGroup = `(?:${UNITS})`;
-  // Match patterns like: "2 cups", "1/2 tsp", "1 1/2 cups", "½ cup", "2-3 lbs", "1.5 oz", plain "2"
+  // Try compound unit first: "1 small bunch", "2 large heads"
+  const compoundRe = new RegExp(
+    `^(\\d+\\s+\\d+[/]\\d+|\\d+[/.]\\d+|\\d+[-–]\\d+|[½¼¾⅓⅔⅛⅜⅝⅞]|\\d+\\.?\\d*)\\s+(?:small|large|medium|med|ripe)\\s+(${unitGroup})(?=\\s|\\.|,|$)\\s*\\.?\\s*`,
+    'i'
+  );
+  // Standard: "2 cups", "1/2 tsp", "½ cup", "2-3 lbs", plain "2"
   const qtyRe = new RegExp(
     `^(\\d+\\s+\\d+[/]\\d+|\\d+[/.]\\d+|\\d+[-–]\\d+|[½¼¾⅓⅔⅛⅜⅝⅞]|\\d+\\.?\\d*)\\s*(${unitGroup})?(?=\\s|\\.|,|$)\\s*\\.?\\s*`,
     'i'
@@ -809,11 +820,19 @@ function parseLine(line) {
   let unit = '';
   let name = line;
 
-  const qtyMatch = line.match(qtyRe);
-  if (qtyMatch && qtyMatch[0].trim().length > 0) {
-    qty = (qtyMatch[1] || '').trim();
-    unit = (qtyMatch[2] || '').trim().toLowerCase();
-    name = line.slice(qtyMatch[0].length).trim();
+  // Try compound first
+  const compoundMatch = line.match(compoundRe);
+  if (compoundMatch && compoundMatch[0].trim().length > 0) {
+    qty = (compoundMatch[1] || '').trim();
+    unit = compoundMatch[0].replace(compoundMatch[1], '').trim().replace(/\.\s*$/, '').toLowerCase();
+    name = line.slice(compoundMatch[0].length).trim();
+  } else {
+    const qtyMatch = line.match(qtyRe);
+    if (qtyMatch && qtyMatch[0].trim().length > 0) {
+      qty = (qtyMatch[1] || '').trim();
+      unit = (qtyMatch[2] || '').trim().toLowerCase();
+      name = line.slice(qtyMatch[0].length).trim();
+    }
   }
 
   // If no qty found, check for trailing qty in parens: "onion (2)" or "garlic (3 cloves)"
@@ -850,27 +869,116 @@ function parseLine(line) {
   return { id: uid(), qty, unit, name, note, recipe: '' };
 }
 
+// Known recipe names used to validate tag lines
+const KNOWN_RECIPES = [];
+
+// Detect if a line is a recipe tag line (e.g. "Burrito, Biscuit" or "Street Corn")
+function isRecipeTagLine(line) {
+  const t = line.trim();
+  if (!t || t.length > 80) return false;
+  // Must not start with a digit/fraction (that's a qty line)
+  if (/^[\d½¼¾⅓⅔⅛⅜⅝⅞]/.test(t)) return false;
+  // Must not start with common note/description words
+  if (/^(for |or |and |sub |use |just |fresh|bulk|thick|soft|husk|seed|fine|optional|doubled|covers|finish|garnish|street corn d|slaw d|julien|seeded|finely)/i.test(t)) return false;
+  // Reject single generic words that are likely notes/descriptions
+  const parts = t.split(/,\s*/);
+  if (parts.length === 1 && t.split(/\s+/).length <= 2 && /^[a-z]/i.test(t)) {
+    // Single/two word — only accept if it matches a known recipe we've seen
+    if (KNOWN_RECIPES.length > 0) {
+      return KNOWN_RECIPES.some(r => r.toLowerCase() === t.toLowerCase());
+    }
+    return false;
+  }
+  return parts.every(p => p.trim().length > 0 && p.trim().length < 30 && /^[A-Z]/.test(p.trim()));
+}
+
 function parseText(text) {
-  const lines = text.split('\n');
   const results = [];
-  let currentRecipe = '';
+  // Split into blocks by blank lines
+  const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
+  let currentSection = '';
 
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return;
+  // First pass: collect recipe names that appear as tag lines
+  // Recipe tag lines appear frequently, so scan for comma-separated capitalized patterns
+  KNOWN_RECIPES.length = 0;
+  const recipeCandidates = {};
+  blocks.forEach(block => {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    lines.forEach(line => {
+      if (/^[\d½¼¾⅓⅔⅛⅜⅝⅞]/.test(line)) return;
+      if (isHeaderLine(line)) return;
+      if (/^(for |or |and |sub |use |just |fresh|bulk|thick|soft|husk|seed|fine|optional|doubled|covers|finish|garnish)/i.test(line)) return;
+      const parts = line.split(/,\s*/);
+      if (parts.every(p => p.trim().length > 0 && p.trim().length < 30 && /^[A-Z]/.test(p.trim()))) {
+        parts.forEach(p => { recipeCandidates[p.trim()] = (recipeCandidates[p.trim()] || 0) + 1; });
+      }
+    });
+  });
+  // Names appearing 2+ times are likely recipes
+  Object.entries(recipeCandidates).forEach(([name, count]) => {
+    if (count >= 2) KNOWN_RECIPES.push(name);
+  });
 
-    // Check if this line is a section/recipe header
-    const header = isHeaderLine(trimmed);
-    if (header) {
-      currentRecipe = header;
+  // Second pass: parse blocks
+  blocks.forEach(block => {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return;
+
+    // Check if entire block is a section header (single line like "Dairy & Eggs")
+    if (lines.length === 1) {
+      const header = isHeaderLine(lines[0]);
+      if (header) { currentSection = header; return; }
+    }
+    // Also check first line as header for blocks like "Produce\n2 ripe avocados"
+    const headerCheck = isHeaderLine(lines[0]);
+    if (headerCheck && lines.length > 1) {
+      currentSection = headerCheck;
+      lines.shift();
+    }
+
+    // Try to parse first line as an item
+    const item = parseLine(lines[0]);
+    if (!item) {
+      const h = isHeaderLine(lines[0]);
+      if (h) currentSection = h;
       return;
     }
 
-    const item = parseLine(trimmed);
-    if (item) {
-      if (currentRecipe) item.recipe = currentRecipe;
-      results.push(item);
+    // Save section for this item before scanning rest lines (which may change currentSection)
+    const itemSection = currentSection;
+
+    // Remaining lines: separate notes from recipe tags (work backwards)
+    const rest = lines.slice(1);
+    const recipeTags = [];
+    const noteLines = [];
+
+    // Scan from the end: recipe tag lines cluster at the bottom
+    let hitNote = false;
+    for (let i = rest.length - 1; i >= 0; i--) {
+      // Check if this line is actually a section header for the NEXT block
+      if (!hitNote && isHeaderLine(rest[i])) {
+        // This is a section header embedded at end of block — set it for next items
+        currentSection = isHeaderLine(rest[i]);
+        continue;
+      }
+      if (!hitNote && isRecipeTagLine(rest[i])) {
+        recipeTags.unshift(rest[i]);
+      } else {
+        hitNote = true;
+        noteLines.unshift(rest[i]);
+      }
     }
+
+    if (noteLines.length > 0) {
+      const combined = noteLines.join('; ');
+      item.note = item.note ? `${item.note}; ${combined}` : combined;
+    }
+    if (recipeTags.length > 0) {
+      item.recipe = recipeTags.join(', ');
+    }
+
+    item._section = itemSection || '';
+    results.push(item);
   });
 
   return results;
@@ -921,9 +1029,10 @@ function importPaste() {
   const items = parseText(text);
   if (items.length === 0) return;
 
-  // Auto-sort each item into a detected grocery section
+  // Auto-sort: use section header from paste if present, else detect by keywords
   items.forEach(item => {
-    const sectionLabel = detectSection(item.name);
+    const sectionLabel = item._section || detectSection(item.name);
+    delete item._section;
     const section = getOrCreateSection(sectionLabel);
     section.items.push(item);
   });
@@ -1085,7 +1194,7 @@ document.getElementById('pasteInput').addEventListener('input', () => {
   if (items.length > 0) {
     const sectionCounts = {};
     items.forEach(item => {
-      const sec = detectSection(item.name);
+      const sec = item._section || detectSection(item.name);
       sectionCounts[sec] = (sectionCounts[sec] || 0) + 1;
     });
     const breakdown = Object.entries(sectionCounts).map(([s, c]) => `${s} (${c})`).join(', ');
