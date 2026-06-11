@@ -64,6 +64,12 @@
   .notes-label { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
   .notes-input { width: 100%; border: 1.5px solid #e0dfdb; border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafaf8; resize: vertical; min-height: 70px; }
   .notes-input:focus { outline: none; border-color: #2a7a4f; }
+  .notes-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .notes-images:empty { display: none; }
+  .notes-img-wrap { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #e8e7e3; }
+  .notes-img-wrap img { display: block; max-width: 160px; max-height: 120px; object-fit: cover; cursor: pointer; }
+  .notes-img-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff; border: none; font-size: 14px; line-height: 22px; text-align: center; cursor: pointer; display: none; }
+  .notes-img-wrap:hover .notes-img-del { display: block; }
 
   /* ── Content ── */
   .content { padding: 0.25rem 0 1rem; background: #f7f6f3; }
@@ -258,7 +264,8 @@
 
   <div class="notes-area" id="notesArea">
     <div class="notes-label">Notes</div>
-    <textarea class="notes-input" id="notesInput" placeholder="Meal ideas, store preferences, dietary notes..."></textarea>
+    <textarea class="notes-input" id="notesInput" placeholder="Meal ideas, store preferences, dietary notes... (paste images here too)"></textarea>
+    <div class="notes-images" id="notesImages"></div>
   </div>
 
   <!-- Welcome screen (shown when no active list) -->
@@ -449,6 +456,7 @@ function showCurrentView() {
   document.getElementById('dateInput').value = currentList.date;
   document.getElementById('notesInput').value = currentList.notes || '';
   render();
+  renderNoteImages();
 }
 
 function createList() {
@@ -1138,7 +1146,12 @@ function importPaste() {
 }
 
 function toggleNotes() {
-  document.getElementById('notesArea').classList.toggle('open');
+  const el = document.getElementById('notesArea');
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => document.getElementById('notesInput').focus(), 300);
+  }
 }
 function toggleMeta() {
   const el = document.getElementById('metaEdit');
@@ -1279,6 +1292,53 @@ function deleteHistory(idx) {
 document.getElementById('notesInput').addEventListener('input', () => {
   if (currentList) { currentList.notes = document.getElementById('notesInput').value; save(); }
 });
+
+// ── Image paste handling ──
+function handleImagePaste(e) {
+  if (!currentList) return;
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.startsWith('image/')) {
+      e.preventDefault();
+      const file = items[i].getAsFile();
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        if (!currentList.images) currentList.images = [];
+        currentList.images.push(ev.target.result);
+        save();
+        renderNoteImages();
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+  }
+}
+
+function renderNoteImages() {
+  const container = document.getElementById('notesImages');
+  if (!container) return;
+  if (!currentList || !currentList.images || currentList.images.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = currentList.images.map((src, idx) => `
+    <div class="notes-img-wrap">
+      <img src="${src}" onclick="window.open(this.src, '_blank')" title="Click to view full size">
+      <button class="notes-img-del" onclick="deleteNoteImage(${idx})">&times;</button>
+    </div>
+  `).join('');
+}
+
+function deleteNoteImage(idx) {
+  if (!currentList || !currentList.images) return;
+  currentList.images.splice(idx, 1);
+  save();
+  renderNoteImages();
+}
+
+document.getElementById('notesInput').addEventListener('paste', handleImagePaste);
+document.getElementById('pasteInput').addEventListener('paste', handleImagePaste);
 
 // ── Live preview for paste ──
 document.getElementById('pasteInput').addEventListener('input', () => {
