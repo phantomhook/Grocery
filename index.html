@@ -892,7 +892,101 @@ function isRecipeTagLine(line) {
   return parts.every(p => p.trim().length > 0 && p.trim().length < 30 && /^[A-Z]/.test(p.trim()));
 }
 
+function parseMarkdownTable(text) {
+  const results = [];
+  const lines = text.split('\n').filter(l => l.trim().startsWith('|'));
+  if (lines.length < 3) return null; // need header + separator + at least 1 data row
+
+  // Parse header row to find column indices
+  const headerCells = lines[0].split('|').map(c => c.trim().replace(/\*\*/g, '').toLowerCase()).filter(Boolean);
+  // Find columns by name
+  const colMap = {};
+  headerCells.forEach((h, i) => {
+    if (/section|aisle|category/i.test(h)) colMap.section = i;
+    else if (/qty|quantity|amount/i.test(h)) colMap.qty = i;
+    else if (/desc|item|name|product/i.test(h)) colMap.name = i;
+    else if (/note|details|comment/i.test(h)) colMap.note = i;
+  });
+
+  if (colMap.name === undefined) return null; // can't find item column
+
+  // Skip header and separator rows
+  const dataLines = lines.filter(l => !l.match(/^\|\s*[-:]+\s*(\|\s*[-:]+\s*)*\|?\s*$/));
+  dataLines.shift(); // remove header row
+
+  dataLines.forEach(line => {
+    const cells = line.split('|').filter((_, i, a) => i > 0 && i < a.length - (a[a.length-1].trim() === '' ? 1 : 0));
+    if (cells.length < 2) return;
+
+    const clean = (idx) => (cells[idx] || '').trim().replace(/\*\*/g, '');
+    const rawName = colMap.name !== undefined ? clean(colMap.name) : '';
+    if (!rawName || rawName.match(/^[-:]+$/)) return;
+
+    const rawQty = colMap.qty !== undefined ? clean(colMap.qty) : '';
+    const rawNote = colMap.note !== undefined ? clean(colMap.note) : '';
+    const rawSection = colMap.section !== undefined ? clean(colMap.section) : '';
+
+    // Parse qty string to extract number and unit
+    let qty = '', unit = '';
+    if (rawQty && rawQty !== '--') {
+      const unitGroup = `(?:${UNITS})`;
+      const qtyRe = new RegExp(
+        `^(\\d+\\s+\\d+[/]\\d+|\\d+[/.]\\d+|\\d+[-–]\\d+|[½¼¾⅓⅔⅛⅜⅝⅞]|\\d+\\.?\\d*)\\s*(${unitGroup})?(?=\\s|\\.|,|$)`,
+        'i'
+      );
+      const m = rawQty.match(qtyRe);
+      if (m) {
+        qty = (m[1] || '').trim();
+        unit = (m[2] || '').trim().toLowerCase();
+        // Append remaining text to note
+        const remainder = rawQty.slice(m[0].length).trim().replace(/^\(/, '').replace(/\)$/, '').trim();
+        if (remainder) {
+          const fullNote = rawNote ? `${remainder}; ${rawNote}` : remainder;
+          // We'll set note below
+        }
+      } else {
+        qty = rawQty;
+      }
+    }
+
+    // Build note: combine any extra qty text with the note column
+    let note = rawNote;
+    if (rawQty && rawQty !== '--') {
+      const unitGroup2 = `(?:${UNITS})`;
+      const qtyRe2 = new RegExp(`^(?:[\\d½¼¾⅓⅔⅛⅜⅝⅞][\\d\\s/.~*-]*)?(?:${unitGroup2})?\\s*`, 'i');
+      const remainder = rawQty.replace(qtyRe2, '').trim();
+      if (remainder) {
+        const cleanRemainder = remainder.replace(/^\(/, '').replace(/\)$/, '').trim();
+        if (cleanRemainder) note = note ? `${cleanRemainder}; ${note}` : cleanRemainder;
+      }
+    }
+
+    // Extract recipe from note (text after semicolons that looks like recipe names)
+    let recipe = '';
+    if (note) {
+      const parts = note.split(';').map(p => p.trim());
+      const recipeParts = [];
+      const noteParts = [];
+      parts.forEach(p => {
+        if (/^(Esquites|Slaw|Biscuit|Burrito|Street Corn|Herb Cr)/i.test(p)) recipeParts.push(p);
+        else noteParts.push(p);
+      });
+      if (recipeParts.length > 0) recipe = recipeParts.join(', ');
+      note = noteParts.join('; ');
+    }
+
+    const item = { id: uid(), qty, unit, name: rawName, note, recipe, _section: rawSection };
+    results.push(item);
+  });
+
+  return results.length > 0 ? results : null;
+}
+
 function parseText(text) {
+  // Check if input is a markdown table
+  const tableResult = parseMarkdownTable(text);
+  if (tableResult) return tableResult;
+
   const results = [];
   // Split into blocks by blank lines
   const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
